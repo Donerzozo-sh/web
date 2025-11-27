@@ -33,7 +33,7 @@
             background-repeat: no-repeat;
         }
         
-        /* 加载动画 */
+        /* 简化的加载界面 */
         .loading-overlay {
             position: fixed;
             inset: 0;
@@ -46,28 +46,11 @@
             transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
         }
         
-        .loading-spinner {
-            width: 80px;
-            height: 80px;
-            border: 3px solid #333;
-            border-top: 3px solid #ef4444;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        .loading-text {
-            color: #ffffff;
-            font-size: 1.2rem;
-            margin-top: 20px;
-            font-weight: 500;
-        }
-        
         .loading-progress {
             width: 300px;
             height: 4px;
             background: #333;
             border-radius: 2px;
-            margin-top: 20px;
             overflow: hidden;
         }
         
@@ -79,71 +62,10 @@
             transition: width 0.3s ease;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
         .loading-overlay.hidden {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-        }
-        
-        /* 图片加载状态 */
-        .grid-item.loading {
-            background-color: #374151;
-            position: relative;
-        }
-        
-        .grid-item.loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid #666;
-            border-top: 2px solid #ef4444;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        .grid-item.loaded {
-            background-color: transparent;
-        }
-        
-        .grid-item.error {
-            background-color: #1f2937;
-            border: 1px solid #374151;
-        }
-        
-        /* 骨架屏 */
-        .skeleton {
-            background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        
-        /* 性能监控 */
-        .performance-monitor {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            z-index: 1000;
-            display: none;
         }
         
         .table-thumbnail {
@@ -160,20 +82,11 @@
     </style>
 </head>
 <body>
-    <!-- 加载遮罩层 -->
+    <!-- 简化的加载进度条 -->
     <div id="loading-overlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">正在加载作品集...</div>
         <div class="loading-progress">
             <div id="loading-progress-bar" class="loading-progress-bar"></div>
         </div>
-        <div id="loading-status" class="text-gray-400 text-sm mt-4">初始化中...</div>
-    </div>
-
-    <!-- 性能监控 (仅在开发模式显示) -->
-    <div id="performance-monitor" class="performance-monitor">
-        FPS: <span id="fps-counter">0</span> | 
-        加载: <span id="loaded-count">0</span>/<span id="total-count">60</span>
     </div>
 
     <script type="module">
@@ -181,23 +94,17 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // 加载管理器类
+        // 简化的加载管理器
         class LoadingManager {
             constructor() {
                 this.totalItems = 60;
                 this.loadedItems = 0;
-                this.failedItems = 0;
                 this.loadingOverlay = document.getElementById('loading-overlay');
                 this.progressBar = document.getElementById('loading-progress-bar');
-                this.statusText = document.getElementById('loading-status');
-                this.loadedCounter = document.getElementById('loaded-count');
-                this.totalCounter = document.getElementById('total-count');
                 this.imageCache = new Map();
                 this.loadingQueue = [];
-                this.maxConcurrent = 6; // 最大并发加载数
+                this.maxConcurrent = 6;
                 this.currentLoading = 0;
-                
-                if (this.totalCounter) this.totalCounter.textContent = this.totalItems;
             }
             
             updateProgress() {
@@ -205,17 +112,9 @@
                 if (this.progressBar) {
                     this.progressBar.style.width = `${progress}%`;
                 }
-                if (this.loadedCounter) {
-                    this.loadedCounter.textContent = this.loadedItems;
-                }
                 
-                if (this.statusText) {
-                    if (this.loadedItems === this.totalItems) {
-                        this.statusText.textContent = '加载完成';
-                        setTimeout(() => this.hideLoading(), 500);
-                    } else {
-                        this.statusText.textContent = `正在加载素材 ${this.loadedItems}/${this.totalItems}`;
-                    }
+                if (this.loadedItems === this.totalItems) {
+                    setTimeout(() => this.hideLoading(), 500);
                 }
             }
             
@@ -240,7 +139,7 @@
                     
                     const timeout = setTimeout(() => {
                         reject(new Error('Image load timeout'));
-                    }, 10000); // 10秒超时
+                    }, 10000);
                     
                     img.onload = () => {
                         clearTimeout(timeout);
@@ -263,10 +162,8 @@
                         return await this.preloadImage(url);
                     } catch (error) {
                         if (i === maxRetries) {
-                            console.warn(`Failed to load image after ${maxRetries + 1} attempts:`, url);
                             throw error;
                         }
-                        // 指数退避重试
                         await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
                     }
                 }
@@ -278,22 +175,16 @@
                     this.currentLoading++;
                     
                     try {
-                        element.classList.add('loading');
                         await this.loadImageWithRetry(url);
                         element.style.backgroundImage = `url(${url})`;
                         element.style.backgroundColor = 'transparent';
-                        element.classList.remove('loading');
-                        element.classList.add('loaded');
                     } catch (error) {
-                        element.classList.remove('loading');
-                        element.classList.add('error');
-                        this.failedItems++;
+                        // 静默处理失败，保持原背景色
                     } finally {
                         this.currentLoading--;
                         this.loadedItems++;
                         this.updateProgress();
                         
-                        // 继续处理队列
                         if (this.loadingQueue.length > 0) {
                             setTimeout(() => this.processLoadingQueue(), 50);
                         }
@@ -313,53 +204,6 @@
             }
         }
         
-        // 性能监控器
-        class PerformanceMonitor {
-            constructor() {
-                this.fps = 0;
-                this.frameCount = 0;
-                this.lastTime = performance.now();
-                this.fpsElement = document.getElementById('fps-counter');
-                this.monitorElement = document.getElementById('performance-monitor');
-                this.isEnabled = window.location.search.includes('debug=true');
-                
-                if (this.isEnabled && this.monitorElement) {
-                    this.monitorElement.style.display = 'block';
-                    this.startMonitoring();
-                }
-            }
-            
-            startMonitoring() {
-                const updateFPS = () => {
-                    this.frameCount++;
-                    const currentTime = performance.now();
-                    
-                    if (currentTime >= this.lastTime + 1000) {
-                        this.fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastTime));
-                        if (this.fpsElement) {
-                            this.fpsElement.textContent = this.fps;
-                            // FPS颜色指示
-                            if (this.fps >= 55) {
-                                this.fpsElement.style.color = '#10b981';
-                            } else if (this.fps >= 30) {
-                                this.fpsElement.style.color = '#f59e0b';
-                            } else {
-                                this.fpsElement.style.color = '#ef4444';
-                            }
-                        }
-                        
-                        this.frameCount = 0;
-                        this.lastTime = currentTime;
-                    }
-                    
-                    if (this.isEnabled) {
-                        requestAnimationFrame(updateFPS);
-                    }
-                };
-                updateFPS();
-            }
-        }
-        
         // 懒加载观察器
         class LazyLoadObserver {
             constructor(loadingManager) {
@@ -370,7 +214,6 @@
             
             setupIntersectionObserver() {
                 if (!('IntersectionObserver' in window)) {
-                    // 降级处理：立即加载所有图片
                     return;
                 }
                 
@@ -389,7 +232,7 @@
                         }
                     });
                 }, {
-                    rootMargin: '50px', // 提前50px开始加载
+                    rootMargin: '50px',
                     threshold: 0.1
                 });
             }
@@ -430,9 +273,8 @@
         let adminToggleBtn, viewToggleBtn;
         let authModal, authUsernameEl, authPasswordEl, authErrorMessageEl, adminTableContainer;
 
-        // 初始化性能优化组件
+        // 初始化优化组件
         const loadingManager = new LoadingManager();
-        const performanceMonitor = new PerformanceMonitor();
         const lazyLoadObserver = new LazyLoadObserver(loadingManager);
 
         const NUM_COLS = 10;
@@ -640,24 +482,17 @@
         function resetGridScale() { items.forEach(i => { i.el.style.transform = `scale(${currentMinScale})`; i.el.style.opacity = '0.7'; i.el.style.filter = 'brightness(1.0)'; }); }
         function resetGrid() { resetGridScale(); parallaxOffset = {x:0,y:0}; applyGridTransform(); }
         
-        // 更新网格DOM - 添加懒加载支持
         function updateGridDOM() {
             items.forEach((it, i) => {
                 const data = itemData[`item_${i}`] || { img: null, vid: PLACEHOLDER_VID, bgColor: getColorForColumn(getColumnIndex(i)) };
                 
                 if (data.img && data.img.trim()) {
-                    // 设置数据属性以供懒加载使用
                     it.el.dataset.imageUrl = data.img;
                     it.el.style.backgroundColor = data.bgColor || getColorForColumn(getColumnIndex(i));
-                    // 添加骨架屏效果
-                    it.el.classList.add('skeleton');
-                    // 开始懒加载观察
                     lazyLoadObserver.observe(it.el);
                 } else {
                     it.el.style.backgroundImage = 'none';
                     it.el.style.backgroundColor = data.bgColor;
-                    it.el.classList.remove('skeleton');
-                    // 非图片项目直接标记为已加载
                     loadingManager.loadedItems++;
                     loadingManager.updateProgress();
                 }
@@ -677,10 +512,8 @@
                 const div = document.createElement('div');
                 div.className = 'grid-item aspect-square bg-cover bg-center cursor-pointer';
                 
-                // 初始设置为背景色或骨架屏
                 if (data.img && data.img.trim()) {
                     div.style.backgroundColor = data.bgColor || getColorForColumn(getColumnIndex(i));
-                    div.classList.add('skeleton');
                     div.dataset.imageUrl = data.img;
                 } else {
                     div.style.backgroundImage = 'none';
@@ -699,11 +532,9 @@
                     twinkleSpeed: div.twinkleSpeed 
                 });
                 
-                // 启动懒加载观察
                 if (data.img && data.img.trim()) {
                     lazyLoadObserver.observe(div);
                 } else {
-                    // 非图片项目直接计入已加载
                     loadingManager.loadedItems++;
                 }
             }
@@ -885,15 +716,10 @@
         window.addEventListener('load', async () => {
             setupDOM();
             
-            // 更新加载状态
-            loadingManager.statusText.textContent = '正在连接数据库...';
-            
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app); auth = getAuth(app);
                 await signInAnonymously(auth);
-                
-                loadingManager.statusText.textContent = '正在加载配置...';
                 
                 onSnapshot(doc(db, getSettingsDocPath()), snap => {
                     const d = snap.exists() ? snap.data() : {};
@@ -919,8 +745,6 @@
                 });
                 
                 onSnapshot(collection(db, getGridCollectionPath()), snap => {
-                    loadingManager.statusText.textContent = '正在加载素材数据...';
-                    
                     snap.docChanges().forEach(c => {
                         const d = c.doc.data();
                         const id = c.doc.id;
@@ -934,7 +758,6 @@
                     }
                     
                     if (!items.length) { 
-                        loadingManager.statusText.textContent = '正在创建网格...';
                         createGrid(); 
                         isMouseActive = true; 
                         startAnimationLoop(); 
@@ -946,7 +769,6 @@
             } catch (e) {
                 console.warn("Firebase失败，进入本地模式", e);
                 isLocalMode = true;
-                loadingManager.statusText.textContent = '离线模式 - 正在初始化...';
                 
                 document.title = DEFAULT_CONTENT.webTitle;
                 mainTitleEl.textContent = DEFAULT_CONTENT.title;
