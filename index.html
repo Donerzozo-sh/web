@@ -1,18 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <!-- 性能优化：预连接关键资源 -->
-    <link rel="preconnect" href="https://firebasestorage.googleapis.com">
-    <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/design-c9479.firebasestorage.app/o/favicon.png?alt=media&token=8a15574c-525d-4855-88f3-60f91dc7b45a" />
-    <link rel="shortcut icon" href="https://firebasestorage.googleapis.com/v0/b/design-c9479.firebasestorage.app/o/favicon.png?alt=media&token=8a15574c-525d-4855-88f3-60f91dc7b45a" />
+<link rel="shortcut icon" href="https://firebasestorage.googleapis.com/v0/b/design-c9479.firebasestorage.app/o/favicon.png?alt=media&token=8a15574c-525d-4855-88f3-60f91dc7b45a" />
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    
-    <!-- 默认设置：固化标题 -->
     <title id="web-title">多媒体设计作品集</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -28,8 +21,6 @@
             width: 140vw;
             height: 140vh;
             transform-origin: center center;
-            /* 性能优化：硬件加速提示 */
-            will-change: transform; 
         }
         .grid-item {
             transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
@@ -37,7 +28,124 @@
                         filter 0.15s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: transform, opacity, filter;
             opacity: 0.7;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
+        
+        /* 加载动画 */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 3px solid #333;
+            border-top: 3px solid #ef4444;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            color: #ffffff;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        
+        .loading-progress {
+            width: 300px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f97316);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        /* 图片加载状态 */
+        .grid-item.loading {
+            background-color: #374151;
+            position: relative;
+        }
+        
+        .grid-item.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid #666;
+            border-top: 2px solid #ef4444;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .grid-item.loaded {
+            background-color: transparent;
+        }
+        
+        .grid-item.error {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+        }
+        
+        /* 骨架屏 */
+        .skeleton {
+            background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* 性能监控 */
+        .performance-monitor {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            z-index: 1000;
+            display: none;
+        }
+        
         .table-thumbnail {
             width: 60px;
             height: 60px;
@@ -52,11 +160,253 @@
     </style>
 </head>
 <body>
+    <!-- 加载遮罩层 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载作品集...</div>
+        <div class="loading-progress">
+            <div id="loading-progress-bar" class="loading-progress-bar"></div>
+        </div>
+        <div id="loading-status" class="text-gray-400 text-sm mt-4">初始化中...</div>
+    </div>
+
+    <!-- 性能监控 (仅在开发模式显示) -->
+    <div id="performance-monitor" class="performance-monitor">
+        FPS: <span id="fps-counter">0</span> | 
+        加载: <span id="loaded-count">0</span>/<span id="total-count">60</span>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
+        // 加载管理器类
+        class LoadingManager {
+            constructor() {
+                this.totalItems = 60;
+                this.loadedItems = 0;
+                this.failedItems = 0;
+                this.loadingOverlay = document.getElementById('loading-overlay');
+                this.progressBar = document.getElementById('loading-progress-bar');
+                this.statusText = document.getElementById('loading-status');
+                this.loadedCounter = document.getElementById('loaded-count');
+                this.totalCounter = document.getElementById('total-count');
+                this.imageCache = new Map();
+                this.loadingQueue = [];
+                this.maxConcurrent = 6; // 最大并发加载数
+                this.currentLoading = 0;
+                
+                if (this.totalCounter) this.totalCounter.textContent = this.totalItems;
+            }
+            
+            updateProgress() {
+                const progress = (this.loadedItems / this.totalItems) * 100;
+                if (this.progressBar) {
+                    this.progressBar.style.width = `${progress}%`;
+                }
+                if (this.loadedCounter) {
+                    this.loadedCounter.textContent = this.loadedItems;
+                }
+                
+                if (this.statusText) {
+                    if (this.loadedItems === this.totalItems) {
+                        this.statusText.textContent = '加载完成';
+                        setTimeout(() => this.hideLoading(), 500);
+                    } else {
+                        this.statusText.textContent = `正在加载素材 ${this.loadedItems}/${this.totalItems}`;
+                    }
+                }
+            }
+            
+            hideLoading() {
+                if (this.loadingOverlay) {
+                    this.loadingOverlay.classList.add('hidden');
+                    setTimeout(() => {
+                        this.loadingOverlay.style.display = 'none';
+                    }, 800);
+                }
+            }
+            
+            preloadImage(url) {
+                return new Promise((resolve, reject) => {
+                    if (this.imageCache.has(url)) {
+                        resolve(this.imageCache.get(url));
+                        return;
+                    }
+                    
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Image load timeout'));
+                    }, 10000); // 10秒超时
+                    
+                    img.onload = () => {
+                        clearTimeout(timeout);
+                        this.imageCache.set(url, img);
+                        resolve(img);
+                    };
+                    
+                    img.onerror = () => {
+                        clearTimeout(timeout);
+                        reject(new Error('Image load failed'));
+                    };
+                    
+                    img.src = url;
+                });
+            }
+            
+            async loadImageWithRetry(url, maxRetries = 2) {
+                for (let i = 0; i <= maxRetries; i++) {
+                    try {
+                        return await this.preloadImage(url);
+                    } catch (error) {
+                        if (i === maxRetries) {
+                            console.warn(`Failed to load image after ${maxRetries + 1} attempts:`, url);
+                            throw error;
+                        }
+                        // 指数退避重试
+                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                    }
+                }
+            }
+            
+            async processLoadingQueue() {
+                while (this.loadingQueue.length > 0 && this.currentLoading < this.maxConcurrent) {
+                    const { url, element, itemId } = this.loadingQueue.shift();
+                    this.currentLoading++;
+                    
+                    try {
+                        element.classList.add('loading');
+                        await this.loadImageWithRetry(url);
+                        element.style.backgroundImage = `url(${url})`;
+                        element.style.backgroundColor = 'transparent';
+                        element.classList.remove('loading');
+                        element.classList.add('loaded');
+                    } catch (error) {
+                        element.classList.remove('loading');
+                        element.classList.add('error');
+                        this.failedItems++;
+                    } finally {
+                        this.currentLoading--;
+                        this.loadedItems++;
+                        this.updateProgress();
+                        
+                        // 继续处理队列
+                        if (this.loadingQueue.length > 0) {
+                            setTimeout(() => this.processLoadingQueue(), 50);
+                        }
+                    }
+                }
+            }
+            
+            queueImageLoad(url, element, itemId) {
+                if (!url || !url.trim()) {
+                    this.loadedItems++;
+                    this.updateProgress();
+                    return;
+                }
+                
+                this.loadingQueue.push({ url, element, itemId });
+                this.processLoadingQueue();
+            }
+        }
+        
+        // 性能监控器
+        class PerformanceMonitor {
+            constructor() {
+                this.fps = 0;
+                this.frameCount = 0;
+                this.lastTime = performance.now();
+                this.fpsElement = document.getElementById('fps-counter');
+                this.monitorElement = document.getElementById('performance-monitor');
+                this.isEnabled = window.location.search.includes('debug=true');
+                
+                if (this.isEnabled && this.monitorElement) {
+                    this.monitorElement.style.display = 'block';
+                    this.startMonitoring();
+                }
+            }
+            
+            startMonitoring() {
+                const updateFPS = () => {
+                    this.frameCount++;
+                    const currentTime = performance.now();
+                    
+                    if (currentTime >= this.lastTime + 1000) {
+                        this.fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastTime));
+                        if (this.fpsElement) {
+                            this.fpsElement.textContent = this.fps;
+                            // FPS颜色指示
+                            if (this.fps >= 55) {
+                                this.fpsElement.style.color = '#10b981';
+                            } else if (this.fps >= 30) {
+                                this.fpsElement.style.color = '#f59e0b';
+                            } else {
+                                this.fpsElement.style.color = '#ef4444';
+                            }
+                        }
+                        
+                        this.frameCount = 0;
+                        this.lastTime = currentTime;
+                    }
+                    
+                    if (this.isEnabled) {
+                        requestAnimationFrame(updateFPS);
+                    }
+                };
+                updateFPS();
+            }
+        }
+        
+        // 懒加载观察器
+        class LazyLoadObserver {
+            constructor(loadingManager) {
+                this.loadingManager = loadingManager;
+                this.observer = null;
+                this.setupIntersectionObserver();
+            }
+            
+            setupIntersectionObserver() {
+                if (!('IntersectionObserver' in window)) {
+                    // 降级处理：立即加载所有图片
+                    return;
+                }
+                
+                this.observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const element = entry.target;
+                            const imageUrl = element.dataset.imageUrl;
+                            const itemId = element.dataset.videoId;
+                            
+                            if (imageUrl) {
+                                this.loadingManager.queueImageLoad(imageUrl, element, itemId);
+                            }
+                            
+                            this.observer.unobserve(element);
+                        }
+                    });
+                }, {
+                    rootMargin: '50px', // 提前50px开始加载
+                    threshold: 0.1
+                });
+            }
+            
+            observe(element) {
+                if (this.observer) {
+                    this.observer.observe(element);
+                }
+            }
+            
+            disconnect() {
+                if (this.observer) {
+                    this.observer.disconnect();
+                }
+            }
+        }
+
         const appId = 'design-c9479';
         const firebaseConfig = {
             apiKey: "AIzaSyDApuOEfnj7x7lg7T-3xceKQMlRvcdJV68",
@@ -67,7 +417,6 @@
             appId: "1:779638854632:web:cd467e5c88cb87c2de0a5d",
             measurementId: "G-RRL6LEV1NV"
         };
-
         let db, auth;
         let isLocalMode = false;
         let gridContainer, modal, videoPlayer, closeModal, mainTitleEl, subTextEl;
@@ -80,13 +429,16 @@
         let editTwinkleFrequencyEl, editTwinkleAmplitudeEl;
         let adminToggleBtn, viewToggleBtn;
         let authModal, authUsernameEl, authPasswordEl, authErrorMessageEl, adminTableContainer;
-        
+
+        // 初始化性能优化组件
+        const loadingManager = new LoadingManager();
+        const performanceMonitor = new PerformanceMonitor();
+        const lazyLoadObserver = new LazyLoadObserver(loadingManager);
+
         const NUM_COLS = 10;
         const NUM_ROWS = 6;
         const TOTAL_ITEMS = 60;
         const PLACEHOLDER_VID = "https://www.w3schools.com/html/mov_bbb.mp4";
-        
-        // 视觉参数
         let currentFisheyeRadius = 300;
         let currentDecayPower = 2.0;
         let currentMinScale = 0.175;
@@ -97,24 +449,18 @@
         let currentTwinkleFrequency = 1.0;
         let currentTwinkleAmplitude = 1.0;
         const PARALLAX_INTENSITY = 0.1;
-        
         window.currentView = 'grid';
         let isAdminMode = false;
         let selectedItemId = null;
         let isFocusMode = false;
-
         const DEFAULT_FISHEYE_SETTINGS = {
             radius: 300, decayPower: 2.0, minScale: 0.175, maxScale: 3.0,
             parallaxSmoothing: 0.2, canvasScale: 1.0, canvasOffsetX: 0,
             twinkleFrequency: 1.0, twinkleAmplitude: 1.0
         };
-        
         const GRID_COLORS = ['#EF4444','#F97316','#F59E0B','#10B981','#3B82F6','#6366F1','#8B5CF6','#EC4899','#FBBF24','#A78BFA','#4ADE80','#FB7185','#D946EF','#06B6D4'];
-        
         function getColumnIndex(i) { return i % NUM_COLS; }
         function getColorForColumn(col) { return GRID_COLORS[col % GRID_COLORS.length]; }
-        
-        // 默认设置：与HTML初始内容完全一致，加快首屏感知
         const DEFAULT_CONTENT = {
             title: "3D&Motion Creative&Production",
             subtitle: "Powerd by REDesign",
@@ -122,7 +468,6 @@
             titleStyle: { weight: 'font-extrabold', spacing: 'tracking-normal', color: '#ffffff' },
             subtitleStyle: { weight: 'font-normal', spacing: 'tracking-normal', color: '#9CA3AF' }
         };
-
         let items = [];
         let itemData = {};
         let mousePos = { x: 0, y: 0 };
@@ -130,10 +475,8 @@
         let isMouseOverCanvas = false;
         let animationFrameId = null;
         let parallaxOffset = { x: 0, y: 0 };
-
         const getSettingsDocPath = () => `/artifacts/${appId}/public/data/homepage_content/settings`;
         const getGridCollectionPath = () => `/artifacts/${appId}/public/data/grid_items`;
-
         function applyTextStyles(el, style) {
             if (!el) return;
             el.className = el.className.replace(/font-(extrabold|bold|medium|normal|light|thin)/g, '');
@@ -142,14 +485,12 @@
             el.classList.add(style.spacing || 'tracking-normal');
             el.style.color = style.color || '#ffffff';
         }
-
         function renderLocationThumbnail(index, color) {
             let html = `<div class="w-[60px] h-[45px] grid gap-[1px] bg-gray-900 border border-gray-700 rounded-sm overflow-hidden" style="grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(6,1fr)">`;
             for (let i = 0; i < TOTAL_ITEMS; i++) html += `<div style="background:${i===index?color:'#374151'}"></div>`;
             html += `</div>`;
             return html;
         }
-
         function renderAdminTable() {
             const container = document.getElementById('admin-table-view');
             if (!container) return;
@@ -189,7 +530,6 @@
             html += `</div></div>`;
             container.innerHTML = html;
         }
-
         window.setAdminMode = mode => {
             isAdminMode = mode;
             const symbol = adminToggleBtn.querySelector('span');
@@ -206,7 +546,6 @@
                 viewToggleBtn.classList.add('hidden');
             }
         };
-
         window.switchView = view => {
             if (!isAdminMode) return;
             window.currentView = view;
@@ -234,14 +573,12 @@
                 viewToggleBtn.textContent = '切换到列表编辑';
             }
         };
-
         function resetFocusAndScale() {
             isFocusMode = false; selectedItemId = null;
             resetGridScale(); resetGrid();
             document.querySelectorAll('.admin-table-row').forEach(r => r.classList.remove('selected-row'));
             isMouseActive = true; startAnimationLoop();
         }
-
         window.handleAdminToggle = () => isAdminMode ? window.setAdminMode(false) || resetFocusAndScale() : window.openAuthModal();
         window.openAuthModal = () => { authModal.classList.remove('hidden'); authErrorMessageEl.classList.add('hidden'); authPasswordEl.value = ''; authUsernameEl.value = 'admin'; };
         window.closeAuthModal = () => authModal.classList.add('hidden');
@@ -249,7 +586,6 @@
             if (authUsernameEl.value.trim() === 'admin' && authPasswordEl.value.trim() === '1234') window.setAdminMode(true);
             else { authErrorMessageEl.classList.remove('hidden'); authPasswordEl.value = ''; }
         };
-
         window.saveInlineItemChange = async (itemId, imgInputId, vidInputId, btn) => {
             const newImg = document.getElementById(imgInputId).value.trim();
             const newVid = document.getElementById(vidInputId).value.trim();
@@ -272,7 +608,6 @@
                 }, 1500);
             }
         };
-
         function closeVideoModalFunc() {
             modal.classList.add('hidden');
             videoPlayer.pause(); 
@@ -289,7 +624,6 @@
             wake();
             setTimeout(cacheItemPositions, 100);
         }
-
         function cacheItemPositions() {
             const old = gridContainer.style.transform;
             gridContainer.style.transform = `translateX(${currentCanvasOffsetX}px) scale(${currentCanvasScale})`;
@@ -299,46 +633,86 @@
             });
             gridContainer.style.transform = old;
         }
-
         function applyGridTransform() {
             gridContainer.style.transformOrigin = 'center center';
             gridContainer.style.transform = `translate3d(${parallaxOffset.x + currentCanvasOffsetX}px, ${parallaxOffset.y}px, 0) scale(${currentCanvasScale})`;
         }
-
         function resetGridScale() { items.forEach(i => { i.el.style.transform = `scale(${currentMinScale})`; i.el.style.opacity = '0.7'; i.el.style.filter = 'brightness(1.0)'; }); }
         function resetGrid() { resetGridScale(); parallaxOffset = {x:0,y:0}; applyGridTransform(); }
-
+        
+        // 更新网格DOM - 添加懒加载支持
         function updateGridDOM() {
             items.forEach((it, i) => {
                 const data = itemData[`item_${i}`] || { img: null, vid: PLACEHOLDER_VID, bgColor: getColorForColumn(getColumnIndex(i)) };
-                if (data.img && data.img.trim()) { it.el.style.backgroundImage = `url(${data.img})`; it.el.style.backgroundColor = 'transparent'; }
-                else { it.el.style.backgroundImage = 'none'; it.el.style.backgroundColor = data.bgColor; }
+                
+                if (data.img && data.img.trim()) {
+                    // 设置数据属性以供懒加载使用
+                    it.el.dataset.imageUrl = data.img;
+                    it.el.style.backgroundColor = data.bgColor || getColorForColumn(getColumnIndex(i));
+                    // 添加骨架屏效果
+                    it.el.classList.add('skeleton');
+                    // 开始懒加载观察
+                    lazyLoadObserver.observe(it.el);
+                } else {
+                    it.el.style.backgroundImage = 'none';
+                    it.el.style.backgroundColor = data.bgColor;
+                    it.el.classList.remove('skeleton');
+                    // 非图片项目直接标记为已加载
+                    loadingManager.loadedItems++;
+                    loadingManager.updateProgress();
+                }
             });
             applyGridTransform();
             cacheItemPositions();
         }
-
+        
         function createGrid() {
             if (items.length) return;
-            gridContainer.innerHTML = ''; gridContainer.style.gridTemplateColumns = `repeat(10,1fr)`;
+            gridContainer.innerHTML = ''; 
+            gridContainer.style.gridTemplateColumns = `repeat(10,1fr)`;
+            
             for (let i = 0; i < TOTAL_ITEMS; i++) {
                 const id = `item_${i}`;
                 const data = itemData[id] || { img: null, vid: PLACEHOLDER_VID, bgColor: getColorForColumn(getColumnIndex(i)) };
                 const div = document.createElement('div');
                 div.className = 'grid-item aspect-square bg-cover bg-center cursor-pointer';
-                div.style.backgroundImage = data.img && data.img.trim() ? `url(${data.img})` : 'none';
-                div.style.backgroundColor = data.img && data.img.trim() ? 'transparent' : data.bgColor;
+                
+                // 初始设置为背景色或骨架屏
+                if (data.img && data.img.trim()) {
+                    div.style.backgroundColor = data.bgColor || getColorForColumn(getColumnIndex(i));
+                    div.classList.add('skeleton');
+                    div.dataset.imageUrl = data.img;
+                } else {
+                    div.style.backgroundImage = 'none';
+                    div.style.backgroundColor = data.bgColor;
+                }
+                
                 div.style.transform = `scale(${currentMinScale})`;
                 div.dataset.videoId = id;
                 div.twinklePhase = Math.random()*Math.PI*2;
                 div.twinkleSpeed = 0.5 + Math.random()*0.5;
                 gridContainer.appendChild(div);
-                items.push({ el: div, center: {x:0,y:0}, twinklePhase: div.twinklePhase, twinkleSpeed: div.twinkleSpeed });
+                items.push({ 
+                    el: div, 
+                    center: {x:0,y:0}, 
+                    twinklePhase: div.twinklePhase, 
+                    twinkleSpeed: div.twinkleSpeed 
+                });
+                
+                // 启动懒加载观察
+                if (data.img && data.img.trim()) {
+                    lazyLoadObserver.observe(div);
+                } else {
+                    // 非图片项目直接计入已加载
+                    loadingManager.loadedItems++;
+                }
             }
+            
+            loadingManager.updateProgress();
             applyGridTransform();
             cacheItemPositions();
         }
-
+        
         function updateFisheyeEffect() {
             const cx = innerWidth/2, cy = innerHeight/2;
             if (isMouseOverCanvas && !isFocusMode) {
@@ -381,17 +755,14 @@
             });
             if (isMouseActive) animationFrameId = requestAnimationFrame(updateFisheyeEffect);
         }
-
         function startAnimationLoop() {
             if (!animationFrameId) animationFrameId = requestAnimationFrame(updateFisheyeEffect);
         }
-
         function openVideoModal(src) { 
             videoPlayer.src = src; 
             modal.classList.remove('hidden'); 
             videoPlayer.play().catch(() => {}); 
         }
-
         window.toggleEditMode = enable => {
             if (!isAdminMode) return;
             if (enable) {
@@ -423,7 +794,6 @@
                 editContainer.classList.add('hidden');
             }
         };
-
         window.saveContent = async () => {
             if (!isAdminMode || !db) return;
             const newSettings = {
@@ -455,7 +825,6 @@
             await setDoc(doc(db, getSettingsDocPath()), newSettings, { merge: true });
             window.toggleEditMode(false);
         };
-
         function setupDOM() {
             gridContainer = document.getElementById('grid-container');
             modal = document.getElementById('video-modal');
@@ -512,39 +881,29 @@
                 openVideoModal(itemData[id]?.vid || PLACEHOLDER_VID);
             };
         }
-
-        // 优化：DOM 加载完成后立即渲染网格，不等待图片加载
-        document.addEventListener('DOMContentLoaded', () => {
+        
+        window.addEventListener('load', async () => {
             setupDOM();
-            // 立即初始化本地数据以加速显示
-            for (let i = 0; i < TOTAL_ITEMS; i++) {
-                const id = `item_${i}`;
-                itemData[id] = { img: null, vid: PLACEHOLDER_VID, bgColor: getColorForColumn(getColumnIndex(i)) };
-            }
-            createGrid();
-            isMouseActive = true;
-            startAnimationLoop();
-        });
-
-        // 异步加载 Firebase 数据
-        (async function initFirebase() {
+            
+            // 更新加载状态
+            loadingManager.statusText.textContent = '正在连接数据库...';
+            
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app); auth = getAuth(app);
                 await signInAnonymously(auth);
                 
+                loadingManager.statusText.textContent = '正在加载配置...';
+                
                 onSnapshot(doc(db, getSettingsDocPath()), snap => {
                     const d = snap.exists() ? snap.data() : {};
-                    // 如果数据库有值则更新，否则保持默认
-                    if (d.webTitle) document.title = d.webTitle;
-                    if (d.title) mainTitleEl.textContent = d.title;
-                    if (d.subtitle) subTextEl.textContent = d.subtitle;
-                    
+                    document.title = d.webTitle || DEFAULT_CONTENT.webTitle;
+                    mainTitleEl.textContent = d.title || DEFAULT_CONTENT.title;
+                    subTextEl.textContent = d.subtitle || DEFAULT_CONTENT.subtitle;
                     const ts = d.titleStyle || DEFAULT_CONTENT.titleStyle;
                     const ss = d.subtitleStyle || DEFAULT_CONTENT.subtitleStyle;
                     applyTextStyles(mainTitleEl, ts);
                     applyTextStyles(subTextEl, ss);
-                    
                     const s = d.fisheyeSettings || DEFAULT_FISHEYE_SETTINGS;
                     currentFisheyeRadius = s.radius;
                     currentDecayPower = s.decayPower;
@@ -558,8 +917,10 @@
                     applyGridTransform();
                     if (items.length > 0) updateGridDOM();
                 });
-
+                
                 onSnapshot(collection(db, getGridCollectionPath()), snap => {
+                    loadingManager.statusText.textContent = '正在加载素材数据...';
+                    
                     snap.docChanges().forEach(c => {
                         const d = c.doc.data();
                         const id = c.doc.id;
@@ -567,15 +928,35 @@
                         if (i >= TOTAL_ITEMS) return;
                         itemData[id] = { img: d.img || null, vid: d.vid || PLACEHOLDER_VID, bgColor: d.bgColor || getColorForColumn(getColumnIndex(i)) };
                     });
-                    // 更新网格显示
-                    updateGridDOM();
+                    for (let i = 0; i < TOTAL_ITEMS; i++) {
+                        const id = `item_${i}`;
+                        if (!itemData[id]) itemData[id] = { img: null, vid: PLACEHOLDER_VID, bgColor: getColorForColumn(getColumnIndex(i)) };
+                    }
+                    
+                    if (!items.length) { 
+                        loadingManager.statusText.textContent = '正在创建网格...';
+                        createGrid(); 
+                        isMouseActive = true; 
+                        startAnimationLoop(); 
+                    } else if (items.length > 0) {
+                        updateGridDOM();
+                    }
                 });
+                
             } catch (e) {
-                console.warn("Firebase 连接失败或延时，保持本地默认显示", e);
+                console.warn("Firebase失败，进入本地模式", e);
                 isLocalMode = true;
-                // 无需重置，因为 DOMContentLoaded 已经渲染了默认内容
+                loadingManager.statusText.textContent = '离线模式 - 正在初始化...';
+                
+                document.title = DEFAULT_CONTENT.webTitle;
+                mainTitleEl.textContent = DEFAULT_CONTENT.title;
+                subTextEl.textContent = DEFAULT_CONTENT.subtitle;
+                for (let i = 0; i < TOTAL_ITEMS; i++) itemData[`item_${i}`] = { img: null, vid: PLACEHOLDER_VID, bgColor: getColorForColumn(getColumnIndex(i)) };
+                createGrid(); 
+                isMouseActive = true; 
+                startAnimationLoop();
             }
-        })();
+        });
     </script>
     <div id="top-content-area" class="fixed top-0 left-0 right-0 p-8 md:p-12 z-20 text-white pointer-events-none transition-all duration-300">
         <div id="admin-persistent-controls" class="absolute top-8 right-8 md:top-12 md:right-12 z-30 flex space-x-4 pointer-events-auto">
@@ -585,7 +966,6 @@
             </button>
         </div>
         <div id="content-display" class="flex flex-col">
-            <!-- 默认内容已直接固化在 HTML 中 -->
             <h1 id="main-title" class="text-white text-4xl font-extrabold cursor-text transition-all duration-500 hover:text-yellow-400 pointer-events-auto md:text-8xl tracking-normal" onclick="toggleEditMode(true)">3D&Motion Creative&Production</h1>
             <p id="sub-text" class="text-gray-400 text-base font-normal cursor-text transition-all duration-500 hover:text-gray-200 pointer-events-auto md:text-2xl tracking-normal" onclick="toggleEditMode(true)">Powerd by REDesign</p>
         </div>
