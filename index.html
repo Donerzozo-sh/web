@@ -39,6 +39,19 @@
             background-repeat: no-repeat;
         }
         
+        /* 更新的加载界面样式 */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 1.2s ease-out, visibility 1.2s ease-out;
+        }
+        
         /* REDesign 文字动画样式 */
         #loading-text {
             font-family: 'Roboto Flex', sans-serif;
@@ -47,7 +60,7 @@
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            color: #eeeeee;
+            color: #ffffff;
             margin-bottom: 40px;
         }
         
@@ -148,7 +161,7 @@
         
         // 初始化文字动画
         function initLoadingAnimation() {
-            const text = "REDesign®2025";
+            const text = "REDesign";
             const container = document.getElementById("loading-text");
             container.innerHTML = ''; // 清空容器
             
@@ -996,4 +1009,3 @@
     </div>
 </body>
 </html>
-
