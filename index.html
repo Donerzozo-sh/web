@@ -1523,24 +1523,24 @@
                 您的浏览器不支持视频播放。
             </video>
             
-            <!-- 音量控制组件 -->
-<div class="video-controls">
-    <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.1" value="0">
-    <button id="video-sound-toggle" class="video-sound-btn muted" onclick="toggleVideoSound()">
-        <!-- ✨ 完美对齐的有声音图标 -->
-        <svg class="sound-on" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 10v4h3l4 4V6l-4 4H3z"/>
-            <path d="M14 9v6c1.5-1 1.5-5 0-6z"/>
-            <path d="M16 7v10c2.5-2 2.5-8 0-10z"/>
-        </svg>
-        <!-- ✨ 完美对齐的静音图标 -->
-        <svg class="sound-off" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 10v4h3l4 4V6l-4 4H3z"/>
-            <path d="M16.5 9.5L19 12l-2.5 2.5M16.5 14.5L19 12l2.5 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-        </svg>
-    </button>
-</div>
-
+            <!-- 音量控制组件 - ✨ 完美对齐版本 -->
+            <div class="video-controls">
+                <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.1" value="0">
+                <button id="video-sound-toggle" class="video-sound-btn muted" onclick="toggleVideoSound()">
+                    <!-- ✨ 完美对齐的有声音图标 -->
+                    <svg class="sound-on" viewBox="0 0 24 24" fill="white">
+                        <path d="M3 10v4h3l4 4V6l-4 4H3z"/>
+                        <path d="M14 9v6c1.5-1 1.5-5 0-6z"/>
+                        <path d="M16 7v10c2.5-2 2.5-8 0-10z"/>
+                    </svg>
+                    <!-- ✨ 完美对齐的静音图标 -->
+                    <svg class="sound-off" viewBox="0 0 24 24" fill="white">
+                        <path d="M3 10v4h3l4 4V6l-4 4H3z"/>
+                        <path d="M16.5 9.5L19 12l-2.5 2.5M16.5 14.5L19 12l2.5 2.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
         <!-- 右侧内容区域 -->
         <div class="detail-content-section">
@@ -1596,7 +1596,3 @@
     </div>
 </body>
 </html>
-
-
-
-
