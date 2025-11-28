@@ -156,7 +156,7 @@
         .detail-video-section video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain; /* 改为 contain，保持宽高比且完整显示 */
             display: block;
         }
         
@@ -824,7 +824,7 @@
         window.openAuthModal = () => { authModal.classList.remove('hidden'); authErrorMessageEl.classList.add('hidden'); authPasswordEl.value = ''; authUsernameEl.value = 'admin'; };
         window.closeAuthModal = () => authModal.classList.add('hidden');
         window.handleAdminLogin = () => {
-            if (authUsernameEl.value.trim() === 'admin' && authPasswordEl.value.trim() === '1234') window.setAdminMode(true);
+            if (authUsernameEl.value.trim() === 'admin' && authPasswordEl.value.trim() === '121310') window.setAdminMode(true);
             else { authErrorMessageEl.classList.remove('hidden'); authPasswordEl.value = ''; }
         };
         
