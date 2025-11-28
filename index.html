@@ -39,13 +39,12 @@
             background-repeat: no-repeat;
         }
         
-        /* 更新的加载界面样式 */
+        /* 简洁的加载界面样式 */
         .loading-overlay {
             position: fixed;
             inset: 0;
             background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 9999;
@@ -61,7 +60,6 @@
             justify-content: center;
             align-items: center;
             color: #ffffff;
-            margin-bottom: 40px;
         }
         
         #loading-text span {
@@ -108,24 +106,6 @@
             100% { font-variation-settings: "wght" 100; }
         }
         
-        /* 可选的进度指示器 */
-        .loading-progress {
-            width: 200px;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 1px;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-        
-        .loading-progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.6));
-            border-radius: 1px;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
         .loading-overlay.hidden {
             opacity: 0;
             visibility: hidden;
@@ -146,12 +126,9 @@
     </style>
 </head>
 <body>
-    <!-- 更新的加载界面 -->
+    <!-- 纯文字动画加载界面 -->
     <div id="loading-overlay" class="loading-overlay">
         <div id="loading-text"></div>
-        <div class="loading-progress">
-            <div id="loading-progress-bar" class="loading-progress-bar"></div>
-        </div>
     </div>
 
     <script type="module">
@@ -173,13 +150,12 @@
             });
         }
         
-        // 简化的加载管理器
+        // 简化的加载管理器（移除进度条）
         class LoadingManager {
             constructor() {
                 this.totalItems = 60;
                 this.loadedItems = 0;
                 this.loadingOverlay = document.getElementById('loading-overlay');
-                this.progressBar = document.getElementById('loading-progress-bar');
                 this.imageCache = new Map();
                 this.loadingQueue = [];
                 this.maxConcurrent = 6;
@@ -189,11 +165,7 @@
             }
             
             updateProgress() {
-                const progress = (this.loadedItems / this.totalItems) * 100;
-                if (this.progressBar) {
-                    this.progressBar.style.width = `${progress}%`;
-                }
-                
+                // 检查是否所有内容都已加载
                 if (this.loadedItems === this.totalItems) {
                     // 确保动画显示足够长时间
                     const elapsedTime = Date.now() - this.startTime;
