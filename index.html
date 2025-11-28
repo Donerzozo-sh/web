@@ -7,6 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title id="web-title">多媒体设计作品集</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 添加 Roboto Flex 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Helvetica Now Display', 'Helvetica Neue', Arial, sans-serif !important;
@@ -33,7 +39,7 @@
             background-repeat: no-repeat;
         }
         
-        /* 简化的加载界面 */
+        /* 更新的加载界面样式 */
         .loading-overlay {
             position: fixed;
             inset: 0;
@@ -43,21 +49,79 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+            transition: opacity 1.2s ease-out, visibility 1.2s ease-out;
         }
         
+        /* REDesign 文字动画样式 */
+        #loading-text {
+            font-family: 'Roboto Flex', sans-serif;
+            font-size: clamp(32px, 8vw, 80px);
+            letter-spacing: 0;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            color: #eeeeee;
+            margin-bottom: 40px;
+        }
+        
+        #loading-text span {
+            font-family: 'Roboto Flex', sans-serif;
+            font-optical-sizing: auto;
+            font-style: normal;
+            font-weight: 100;
+            font-variation-settings:
+                "slnt" 0,
+                "wdth" 100,
+                "GRAD" 0,
+                "XOPQ" 96,
+                "XTRA" 468,
+                "YOPQ" 79,
+                "YTAS" 750,
+                "YTDE" -203,
+                "YTFI" 738,
+                "YTLC" 514,
+                "YTUC" 712;
+            animation: weightPulse 2.5s infinite cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+        
+        @keyframes weightPulse {
+            0%   { font-variation-settings: "wght" 100; }
+            5%   { font-variation-settings: "wght" 175; }
+            10%  { font-variation-settings: "wght" 250; }
+            15%  { font-variation-settings: "wght" 325; }
+            20%  { font-variation-settings: "wght" 400; }
+            25%  { font-variation-settings: "wght" 475; }
+            30%  { font-variation-settings: "wght" 550; }
+            35%  { font-variation-settings: "wght" 625; }
+            40%  { font-variation-settings: "wght" 700; }
+            45%  { font-variation-settings: "wght" 750; }
+            50%  { font-variation-settings: "wght" 800; }
+            55%  { font-variation-settings: "wght" 825; }
+            60%  { font-variation-settings: "wght" 850; }
+            65%  { font-variation-settings: "wght" 775; }
+            70%  { font-variation-settings: "wght" 700; }
+            75%  { font-variation-settings: "wght" 625; }
+            80%  { font-variation-settings: "wght" 550; }
+            85%  { font-variation-settings: "wght" 450; }
+            90%  { font-variation-settings: "wght" 350; }
+            95%  { font-variation-settings: "wght" 225; }
+            100% { font-variation-settings: "wght" 100; }
+        }
+        
+        /* 可选的进度指示器 */
         .loading-progress {
-            width: 300px;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
+            width: 200px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
             overflow: hidden;
+            margin-top: 20px;
         }
         
         .loading-progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #ef4444, #f97316);
-            border-radius: 2px;
+            background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.6));
+            border-radius: 1px;
             width: 0%;
             transition: width 0.3s ease;
         }
@@ -82,8 +146,9 @@
     </style>
 </head>
 <body>
-    <!-- 简化的加载进度条 -->
+    <!-- 更新的加载界面 -->
     <div id="loading-overlay" class="loading-overlay">
+        <div id="loading-text"></div>
         <div class="loading-progress">
             <div id="loading-progress-bar" class="loading-progress-bar"></div>
         </div>
@@ -93,6 +158,20 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // 初始化文字动画
+        function initLoadingAnimation() {
+            const text = "REDesign®2025";
+            const container = document.getElementById("loading-text");
+            container.innerHTML = ''; // 清空容器
+            
+            text.split("").forEach((char, i) => {
+                const span = document.createElement("span");
+                span.textContent = char;
+                span.style.animationDelay = (i * 0.15) + "s";
+                container.appendChild(span);
+            });
+        }
         
         // 简化的加载管理器
         class LoadingManager {
@@ -105,6 +184,8 @@
                 this.loadingQueue = [];
                 this.maxConcurrent = 6;
                 this.currentLoading = 0;
+                this.startTime = Date.now();
+                this.minLoadingTime = 3000; // 最少显示3秒加载动画
             }
             
             updateProgress() {
@@ -114,7 +195,11 @@
                 }
                 
                 if (this.loadedItems === this.totalItems) {
-                    setTimeout(() => this.hideLoading(), 500);
+                    // 确保动画显示足够长时间
+                    const elapsedTime = Date.now() - this.startTime;
+                    const remainingTime = Math.max(0, this.minLoadingTime - elapsedTime);
+                    
+                    setTimeout(() => this.hideLoading(), remainingTime);
                 }
             }
             
@@ -123,7 +208,7 @@
                     this.loadingOverlay.classList.add('hidden');
                     setTimeout(() => {
                         this.loadingOverlay.style.display = 'none';
-                    }, 800);
+                    }, 1200); // 匹配 CSS 过渡时间
                 }
             }
             
@@ -714,6 +799,9 @@
         }
         
         window.addEventListener('load', async () => {
+            // 初始化文字动画
+            initLoadingAnimation();
+            
             setupDOM();
             
             try {
