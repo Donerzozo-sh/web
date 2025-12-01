@@ -51,59 +51,31 @@
             transition: opacity 1.2s ease-out, visibility 1.2s ease-out;
         }
         
-        /* REDesign 文字动画样式 */
+        /* 加载内容容器 */
+        .loading-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* REDesign 文字样式（去掉动画） */
         #loading-text {
             font-family: 'Roboto Flex', sans-serif;
             font-size: clamp(10px, 8vw, 25px);
-            letter-spacing: 0.15em; /* 修复：添加单位 */
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
+            letter-spacing: 0.15em;
             color: #cccccc;
+            font-weight: 400;
         }
         
-        #loading-text span {
+        /* 加载进度百分比样式 */
+        #loading-progress {
             font-family: 'Roboto Flex', sans-serif;
-            font-optical-sizing: auto;
-            font-style: normal;
-            font-weight: 100;
-            font-variation-settings:
-                "slnt" 0,
-                "wdth" 100,
-                "GRAD" 0,
-                "XOPQ" 96,
-                "XTRA" 468,
-                "YOPQ" 79,
-                "YTAS" 750,
-                "YTDE" -203,
-                "YTFI" 738,
-                "YTLC" 514,
-                "YTUC" 712;
-            animation: weightPulse 1s infinite cubic-bezier(0.645, 0.045, 0.355, 1);
-        }
-        
-        @keyframes weightPulse {
-            0%   { font-variation-settings: "wght" 100; }
-            5%   { font-variation-settings: "wght" 175; }
-            10%  { font-variation-settings: "wght" 250; }
-            15%  { font-variation-settings: "wght" 325; }
-            20%  { font-variation-settings: "wght" 400; }
-            25%  { font-variation-settings: "wght" 475; }
-            30%  { font-variation-settings: "wght" 550; }
-            35%  { font-variation-settings: "wght" 625; }
-            40%  { font-variation-settings: "wght" 700; }
-            45%  { font-variation-settings: "wght" 750; }
-            50%  { font-variation-settings: "wght" 800; }
-            55%  { font-variation-settings: "wght" 825; }
-            60%  { font-variation-settings: "wght" 850; }
-            65%  { font-variation-settings: "wght" 775; }
-            70%  { font-variation-settings: "wght" 700; }
-            75%  { font-variation-settings: "wght" 625; }
-            80%  { font-variation-settings: "wght" 550; }
-            85%  { font-variation-settings: "wght" 450; }
-            90%  { font-variation-settings: "wght" 350; }
-            95%  { font-variation-settings: "wght" 225; }
-            100% { font-variation-settings: "wght" 100; }
+            font-size: clamp(8px, 6vw, 20px);
+            letter-spacing: 0.1em;
+            color: #888888;
+            font-weight: 300;
+            min-width: 60px;
+            text-align: left;
         }
         
         .loading-overlay.hidden {
@@ -458,7 +430,10 @@
 <body>
     <!-- 纯文字动画加载界面 -->
     <div id="loading-overlay" class="loading-overlay">
-        <div id="loading-text"></div>
+        <div class="loading-content">
+            <div id="loading-text">REDesign</div>
+            <div id="loading-progress">0%</div>
+        </div>
     </div>
 
     <script type="module">
@@ -466,26 +441,13 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // 初始化文字动画
-        function initLoadingAnimation() {
-            const text = "REDesign  ®  2025";
-            const container = document.getElementById("loading-text");
-            container.innerHTML = ''; // 清空容器
-            
-            text.split("").forEach((char, i) => {
-                const span = document.createElement("span");
-                span.textContent = char;
-                span.style.animationDelay = (i * 0.15) + "s";
-                container.appendChild(span);
-            });
-        }
-        
-        // 简化的加载管理器（移除进度条）
+        // 简化的加载管理器
         class LoadingManager {
             constructor() {
                 this.totalItems = 60;
                 this.loadedItems = 0;
                 this.loadingOverlay = document.getElementById('loading-overlay');
+                this.progressElement = document.getElementById('loading-progress');
                 this.imageCache = new Map();
                 this.loadingQueue = [];
                 this.maxConcurrent = 6;
@@ -495,6 +457,10 @@
             }
             
             updateProgress() {
+                // 计算并更新进度百分比
+                const percentage = Math.round((this.loadedItems / this.totalItems) * 100);
+                this.progressElement.textContent = `${percentage}%`;
+                
                 // 检查是否所有内容都已加载
                 if (this.loadedItems === this.totalItems) {
                     // 确保动画显示足够长时间
@@ -1359,9 +1325,6 @@
         }
         
         window.addEventListener('load', async () => {
-            // 初始化文字动画
-            initLoadingAnimation();
-            
             setupDOM();
             
             try {
