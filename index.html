@@ -55,7 +55,7 @@
         #loading-text {
             font-family: 'Roboto Flex', sans-serif;
             font-size: clamp(10px, 8vw, 25px);
-            letter-spacing: 10;
+            letter-spacing: 0.15em; /* 修复：添加单位 */
             display: inline-flex;
             justify-content: center;
             align-items: center;
@@ -654,6 +654,7 @@
         let editWebTitleEl, editTitleEl, editSubtitleEl;
         let editTitleWeightEl, editSubtitleWeightEl, editTitleSpacingEl, editSubtitleSpacingEl;
         let editTitleColorEl, editSubtitleColorEl;
+        let editTitleSizeEl, editSubtitleSizeEl; // 新增大小控制元素
         let editFisheyeRadiusEl, editDecayPowerEl, editMinScaleEl, editMaxScaleEl;
         let editParallaxSmoothingEl, editCanvasScaleEl, editCanvasOffsetXEl;
         let editTwinkleFrequencyEl, editTwinkleAmplitudeEl;
@@ -700,8 +701,8 @@
             title: "3D&Motion Creative&Production",
             subtitle: "Powerd by REDesign",
             webTitle: "多媒体设计作品集",
-            titleStyle: { weight: 'font-extrabold', spacing: 'tracking-normal', color: '#ffffff' },
-            subtitleStyle: { weight: 'font-normal', spacing: 'tracking-normal', color: '#9CA3AF' }
+            titleStyle: { weight: 'font-extrabold', spacing: 'tracking-normal', color: '#ffffff', size: '8xl' },
+            subtitleStyle: { weight: 'font-normal', spacing: 'tracking-normal', color: '#9CA3AF', size: '2xl' }
         };
         let items = [];
         let itemData = {};
@@ -717,8 +718,10 @@
             if (!el) return;
             el.className = el.className.replace(/font-(extrabold|bold|medium|normal|light|thin)/g, '');
             el.className = el.className.replace(/tracking-(tighter|tight|normal|wide|wider|widest)/g, '');
+            el.className = el.className.replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)/g, '');
             el.classList.add(style.weight || 'font-normal');
             el.classList.add(style.spacing || 'tracking-normal');
+            el.classList.add(`text-${style.size}` || 'text-4xl');
             el.style.color = style.color || '#ffffff';
         }
         
@@ -1209,10 +1212,12 @@
                                          mainTitleEl.classList.contains('font-medium') ? 'font-medium' : 'font-normal';
                 editTitleSpacingEl.value = mainTitleEl.classList.toString().match(/tracking-\w+/)?.[0] || 'tracking-normal';
                 editTitleColorEl.value = mainTitleEl.style.color || '#ffffff';
+                editTitleSizeEl.value = mainTitleEl.classList.toString().match(/text-(\w+)/)?.[1] || '8xl';
                 editSubtitleWeightEl.value = subTextEl.classList.contains('font-bold') ? 'font-bold' :
                                             subTextEl.classList.contains('font-medium') ? 'font-medium' : 'font-normal';
                 editSubtitleSpacingEl.value = subTextEl.classList.toString().match(/tracking-\w+/)?.[0] || 'tracking-normal';
                 editSubtitleColorEl.value = subTextEl.style.color || '#9CA3AF';
+                editSubtitleSizeEl.value = subTextEl.classList.toString().match(/text-(\w+)/)?.[1] || '2xl';
                 editFisheyeRadiusEl.value = currentFisheyeRadius;
                 editDecayPowerEl.value = currentDecayPower;
                 editMinScaleEl.value = currentMinScale;
@@ -1239,12 +1244,14 @@
                 titleStyle: {
                     weight: editTitleWeightEl.value,
                     spacing: editTitleSpacingEl.value,
-                    color: editTitleColorEl.value
+                    color: editTitleColorEl.value,
+                    size: editTitleSizeEl.value
                 },
                 subtitleStyle: {
                     weight: editSubtitleWeightEl.value,
                     spacing: editSubtitleSpacingEl.value,
-                    color: editSubtitleColorEl.value
+                    color: editSubtitleColorEl.value,
+                    size: editSubtitleSizeEl.value
                 },
                 fisheyeSettings: {
                     radius: parseFloat(editFisheyeRadiusEl.value) || 300,
@@ -1282,6 +1289,8 @@
             editSubtitleSpacingEl = document.getElementById('edit-subtitle-spacing');
             editTitleColorEl = document.getElementById('edit-title-color');
             editSubtitleColorEl = document.getElementById('edit-subtitle-color');
+            editTitleSizeEl = document.getElementById('edit-title-size');
+            editSubtitleSizeEl = document.getElementById('edit-subtitle-size');
             editFisheyeRadiusEl = document.getElementById('edit-fisheye-radius');
             editDecayPowerEl = document.getElementById('edit-decay-power');
             editMinScaleEl = document.getElementById('edit-min-scale');
@@ -1316,16 +1325,21 @@
                 updateVolumeIcon(0);
             }
             
-            gridContainer.addEventListener('mouseenter', () => {
+            // 修复：将鼠标事件监听器绑定到document而不是gridContainer，避免被其他元素阻挡
+            document.addEventListener('mouseenter', () => {
                 isMouseOverCanvas = true;
                 isMouseActive = true;
                 startAnimationLoop();
             });
-            gridContainer.addEventListener('mouseleave', () => {
-                isMouseOverCanvas = false;
-            });
+            
+            // 绑定全局鼠标移动事件
             window.addEventListener('mousemove', e => {
                 mousePos = {x: e.clientX, y: e.clientY};
+                // 确保鼠标在页面上时开启交互
+                if (!isMouseActive && !isFocusMode) {
+                    isMouseActive = true;
+                    startAnimationLoop();
+                }
             });
             
             // 修改点击事件：从打开视频模态框改为打开详情页面
@@ -1441,8 +1455,8 @@
             </button>
         </div>
         <div id="content-display" class="flex flex-col">
-            <h1 id="main-title" class="text-white text-4xl font-extrabold cursor-text transition-all duration-500 hover:text-yellow-400 pointer-events-auto md:text-8xl tracking-normal" onclick="toggleEditMode(true)">3D&Motion Creative&Production</h1>
-            <p id="sub-text" class="text-gray-400 text-base font-normal cursor-text transition-all duration-500 hover:text-gray-200 pointer-events-auto md:text-2xl tracking-normal" onclick="toggleEditMode(true)">Powerd by REDesign</p>
+            <h1 id="main-title" class="text-white text-8xl font-extrabold cursor-text transition-all duration-500 hover:text-yellow-400 pointer-events-auto tracking-normal" onclick="toggleEditMode(true)">3D&Motion Creative&Production</h1>
+            <p id="sub-text" class="text-gray-400 text-2xl font-normal cursor-text transition-all duration-500 hover:text-gray-200 pointer-events-auto tracking-normal" onclick="toggleEditMode(true)">Powerd by REDesign</p>
         </div>
         <div id="edit-mode-container" class="hidden bg-gray-900/90 backdrop-blur-sm p-6 rounded-xl shadow-2xl pointer-events-auto max-w-4xl">
             <h2 class="text-xl Structural font-bold mb-4 text-red-400">顶部内容及视觉参数编辑 (Admin)</h2>
@@ -1452,7 +1466,7 @@
                     <div class="p-4 bg-gray-800 rounded-lg">
                         <label class="block text-lg font-medium text-white mb-2">主标题</label>
                         <input id="edit-title" type="text" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2" value="3D&Motion Creative&Production"/>
-                        <div class="grid grid-cols-3 gap-3 mt-3">
+                        <div class="grid grid-cols-4 gap-3 mt-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">字重</label>
                                 <select id="edit-title-weight" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2">
@@ -1473,6 +1487,24 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">大小</label>
+                                <select id="edit-title-size" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2">
+                                    <option value="xs">极小</option>
+                                    <option value="sm">小</option>
+                                    <option value="base">基准</option>
+                                    <option value="lg">大</option>
+                                    <option value="xl">较大</option>
+                                    <option value="2xl">大</option>
+                                    <option value="3xl">很大</option>
+                                    <option value="4xl">超大</option>
+                                    <option value="5xl">特大</option>
+                                    <option value="6xl">巨大</option>
+                                    <option value="7xl">极大</option>
+                                    <option value="8xl" selected>超极大</option>
+                                    <option value="9xl">最大</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">颜色</label>
                                 <input id="edit-title-color" type="color" value="#ffffff" class="w-full h-10 rounded-md bg-gray-700 border-gray-600 cursor-pointer"/>
                             </div>
@@ -1481,7 +1513,7 @@
                     <div class="p-4 bg-gray-800 rounded-lg">
                         <label class="block text-lg font-medium text-white mb-2">副标题</label>
                         <input id="edit-subtitle" type="text" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2" value="Powerd by REDesign"/>
-                        <div class="grid grid-cols-3 gap-3 mt-3">
+                        <div class="grid grid-cols-4 gap-3 mt-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">字重</label>
                                 <select id="edit-subtitle-weight" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2">
@@ -1499,6 +1531,24 @@
                                     <option value="tracking-normal" selected>默认</option>
                                     <option value="tracking-wide">宽</option>
                                     <option value="tracking-wider">更宽</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">大小</label>
+                                <select id="edit-subtitle-size" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2">
+                                    <option value="xs">极小</option>
+                                    <option value="sm">小</option>
+                                    <option value="base">基准</option>
+                                    <option value="lg">大</option>
+                                    <option value="xl">较大</option>
+                                    <option value="2xl" selected>大</option>
+                                    <option value="3xl">很大</option>
+                                    <option value="4xl">超大</option>
+                                    <option value="5xl">特大</option>
+                                    <option value="6xl">巨大</option>
+                                    <option value="7xl">极大</option>
+                                    <option value="8xl">超极大</option>
+                                    <option value="9xl">最大</option>
                                 </select>
                             </div>
                             <div>
@@ -1661,4 +1711,3 @@
     </div>
 </body>
 </html>
-
