@@ -45,41 +45,30 @@
             inset: 0;
             background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 9999;
             transition: opacity 1.2s ease-out, visibility 1.2s ease-out;
         }
         
-        /* REDesign 文字样式 */
+        /* REDesign 文字和百分比一行显示 */
         #loading-text {
             font-family: 'Roboto Flex', sans-serif;
-            font-size: clamp(10px, 8vw, 25px);
-            letter-spacing: 10px;
+            font-size: clamp(12px, 8vw, 28px);
+            letter-spacing: 8px;
             color: #cccccc;
             font-weight: 300;
-            margin-bottom: 20px;
+            animation: textPulse 2s infinite ease-in-out;
         }
         
-        /* 百分比样式 */
-        #loading-percentage {
-            font-family: 'Roboto Flex', sans-serif;
-            font-size: clamp(8px, 6vw, 18px);
-            color: #888888;
-            font-weight: 200;
-            letter-spacing: 2px;
-            animation: percentagePulse 2s infinite ease-in-out;
-        }
-        
-        @keyframes percentagePulse {
+        @keyframes textPulse {
             0%, 100% { 
-                opacity: 0.6;
+                opacity: 0.7;
                 transform: scale(1);
             }
             50% { 
                 opacity: 1;
-                transform: scale(1.05);
+                transform: scale(1.02);
             }
         }
         
@@ -435,8 +424,7 @@
 <body>
     <!-- 简化的加载界面 -->
     <div id="loading-overlay" class="loading-overlay">
-        <div id="loading-text">REDesign</div>
-        <div id="loading-percentage">0%</div>
+        <div id="loading-text">REDesign 0%</div>
     </div>
 
     <script type="module">
@@ -447,10 +435,7 @@
         // 初始化文字显示
         function initLoadingDisplay() {
             const textContainer = document.getElementById("loading-text");
-            const percentageContainer = document.getElementById("loading-percentage");
-            
-            textContainer.textContent = "REDesign";
-            percentageContainer.textContent = "0%";
+            textContainer.textContent = "REDesign 0%";
         }
         
         // 优化的加载管理器
@@ -459,7 +444,7 @@
                 this.totalItems = 60;
                 this.loadedItems = 0;
                 this.loadingOverlay = document.getElementById('loading-overlay');
-                this.percentageEl = document.getElementById('loading-percentage');
+                this.textEl = document.getElementById('loading-text');
                 this.imageCache = new Map();
                 this.loadingQueue = [];
                 this.maxConcurrent = 6;
@@ -469,10 +454,10 @@
             }
             
             updateProgress() {
-                // 计算并更新百分比
+                // 计算并更新百分比，一行显示
                 const percentage = Math.round((this.loadedItems / this.totalItems) * 100);
-                if (this.percentageEl) {
-                    this.percentageEl.textContent = `${percentage}%`;
+                if (this.textEl) {
+                    this.textEl.textContent = `REDesign ${percentage}%`;
                 }
                 
                 // 检查是否所有内容都已加载
