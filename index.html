@@ -58,11 +58,27 @@
             gap: 15px;
         }
         
-        /* REDesign 文字样式（去掉动画） */
+        /* 呼吸下横线样式 */
+        .breathing-line {
+            width: clamp(15px, 3vw, 30px);
+            height: 2px;
+            background-color: #cccccc;
+            opacity: 0.3;
+            animation: breathing 2s ease-in-out infinite;
+        }
+        
+        /* 呼吸动画 */
+        @keyframes breathing {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+        
+        /* REDesign 文字样式 */
         #loading-text {
             font-family: 'Roboto Flex', sans-serif;
             font-size: clamp(10px, 8vw, 25px);
-            letter-spacing: 0.15em;
+            letter-spacing: 0; /* 修改：字间距改为0 */
             color: #cccccc;
             font-weight: 400;
         }
@@ -71,7 +87,7 @@
         #loading-progress {
             font-family: 'Roboto Flex', sans-serif;
             font-size: clamp(8px, 6vw, 20px);
-            letter-spacing: 0.1em;
+            letter-spacing: 0; /* 修改：字间距改为0 */
             color: #888888;
             font-weight: 300;
             min-width: 60px;
@@ -431,6 +447,7 @@
     <!-- 纯文字动画加载界面 -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
+            <div class="breathing-line"></div>
             <div id="loading-text">REDesign</div>
             <div id="loading-progress">0%</div>
         </div>
