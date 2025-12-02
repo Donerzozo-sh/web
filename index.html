@@ -51,26 +51,59 @@
             transition: opacity 1.2s ease-out, visibility 1.2s ease-out;
         }
         
-        /* 加载文字样式 */
+        /* REDesign 文字动画样式 */
         #loading-text {
             font-family: 'Roboto Flex', sans-serif;
             font-size: clamp(10px, 8vw, 25px);
-            letter-spacing: 10px;
-            display: flex;
+            letter-spacing: 10;
+            display: inline-flex;
+            justify-content: center;
             align-items: center;
-            gap: 10px;
             color: #cccccc;
         }
         
-        /* 下横线呼吸灯效果 */
-        .loading-underscore {
-            animation: breathingGlow 2s ease-in-out infinite;
+        #loading-text span {
+            font-family: 'Roboto Flex', sans-serif;
+            font-optical-sizing: auto;
+            font-style: normal;
+            font-weight: 100;
+            font-variation-settings:
+                "slnt" 0,
+                "wdth" 100,
+                "GRAD" 0,
+                "XOPQ" 96,
+                "XTRA" 468,
+                "YOPQ" 79,
+                "YTAS" 750,
+                "YTDE" -203,
+                "YTFI" 738,
+                "YTLC" 514,
+                "YTUC" 712;
+            animation: weightPulse 1s infinite cubic-bezier(0.645, 0.045, 0.355, 1);
         }
         
-        @keyframes breathingGlow {
-            0%   { opacity: 0.3; transform: scale(1); }
-            50%  { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 0.3; transform: scale(1); }
+        @keyframes weightPulse {
+            0%   { font-variation-settings: "wght" 100; }
+            5%   { font-variation-settings: "wght" 175; }
+            10%  { font-variation-settings: "wght" 250; }
+            15%  { font-variation-settings: "wght" 325; }
+            20%  { font-variation-settings: "wght" 400; }
+            25%  { font-variation-settings: "wght" 475; }
+            30%  { font-variation-settings: "wght" 550; }
+            35%  { font-variation-settings: "wght" 625; }
+            40%  { font-variation-settings: "wght" 700; }
+            45%  { font-variation-settings: "wght" 750; }
+            50%  { font-variation-settings: "wght" 800; }
+            55%  { font-variation-settings: "wght" 825; }
+            60%  { font-variation-settings: "wght" 850; }
+            65%  { font-variation-settings: "wght" 775; }
+            70%  { font-variation-settings: "wght" 700; }
+            75%  { font-variation-settings: "wght" 625; }
+            80%  { font-variation-settings: "wght" 550; }
+            85%  { font-variation-settings: "wght" 450; }
+            90%  { font-variation-settings: "wght" 350; }
+            95%  { font-variation-settings: "wght" 225; }
+            100% { font-variation-settings: "wght" 100; }
         }
         
         .loading-overlay.hidden {
@@ -425,11 +458,7 @@
 <body>
     <!-- 纯文字动画加载界面 -->
     <div id="loading-overlay" class="loading-overlay">
-        <div id="loading-text">
-            <span class="loading-underscore">_</span>
-            <span>REDesign</span>
-            <span id="loading-progress">0%</span>
-        </div>
+        <div id="loading-text"></div>
     </div>
 
     <script type="module">
@@ -437,13 +466,26 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // 简化的加载管理器
+        // 初始化文字动画
+        function initLoadingAnimation() {
+            const text = "REDesign  ®  2025";
+            const container = document.getElementById("loading-text");
+            container.innerHTML = ''; // 清空容器
+            
+            text.split("").forEach((char, i) => {
+                const span = document.createElement("span");
+                span.textContent = char;
+                span.style.animationDelay = (i * 0.15) + "s";
+                container.appendChild(span);
+            });
+        }
+        
+        // 简化的加载管理器（移除进度条）
         class LoadingManager {
             constructor() {
                 this.totalItems = 60;
                 this.loadedItems = 0;
                 this.loadingOverlay = document.getElementById('loading-overlay');
-                this.loadingProgress = document.getElementById('loading-progress');
                 this.imageCache = new Map();
                 this.loadingQueue = [];
                 this.maxConcurrent = 6;
@@ -453,9 +495,6 @@
             }
             
             updateProgress() {
-                const progress = Math.round((this.loadedItems / this.totalItems) * 100);
-                this.loadingProgress.textContent = `${progress}%`;
-                
                 // 检查是否所有内容都已加载
                 if (this.loadedItems === this.totalItems) {
                     // 确保动画显示足够长时间
@@ -550,11 +589,6 @@
                 this.loadingQueue.push({ url, element, itemId });
                 this.processLoadingQueue();
             }
-            
-            markItemLoaded() {
-                this.loadedItems++;
-                this.updateProgress();
-            }
         }
         
         // 懒加载观察器
@@ -619,8 +653,7 @@
         let editContainer, contentDisplay, topContentArea;
         let editWebTitleEl, editTitleEl, editSubtitleEl;
         let editTitleWeightEl, editSubtitleWeightEl, editTitleSpacingEl, editSubtitleSpacingEl;
-        let editTitleColorEl, editSubtitleColorEl, editTitleSizeEl, editSubtitleSizeEl;
-        let editLoadingColorEl, editLoadingWeightEl, editLoadingSpacingEl;
+        let editTitleColorEl, editSubtitleColorEl;
         let editFisheyeRadiusEl, editDecayPowerEl, editMinScaleEl, editMaxScaleEl;
         let editParallaxSmoothingEl, editCanvasScaleEl, editCanvasOffsetXEl;
         let editTwinkleFrequencyEl, editTwinkleAmplitudeEl;
@@ -667,9 +700,8 @@
             title: "3D&Motion Creative&Production",
             subtitle: "Powerd by REDesign",
             webTitle: "多媒体设计作品集",
-            titleStyle: { weight: 'font-extrabold', spacing: 'tracking-normal', color: '#ffffff', size: '72px' },
-            subtitleStyle: { weight: 'font-normal', spacing: 'tracking-normal', color: '#9CA3AF', size: '24px' },
-            loadingStyle: { color: '#cccccc', weight: '400', spacing: '10px' }
+            titleStyle: { weight: 'font-extrabold', spacing: 'tracking-normal', color: '#ffffff' },
+            subtitleStyle: { weight: 'font-normal', spacing: 'tracking-normal', color: '#9CA3AF' }
         };
         let items = [];
         let itemData = {};
@@ -688,15 +720,6 @@
             el.classList.add(style.weight || 'font-normal');
             el.classList.add(style.spacing || 'tracking-normal');
             el.style.color = style.color || '#ffffff';
-            el.style.fontSize = style.size || '16px';
-        }
-        
-        function applyLoadingStyles(style) {
-            const loadingText = document.getElementById('loading-text');
-            if (!loadingText) return;
-            loadingText.style.color = style.color || '#cccccc';
-            loadingText.style.fontWeight = style.weight || '400';
-            loadingText.style.letterSpacing = style.spacing || '10px';
         }
         
         function renderLocationThumbnail(index, color) {
@@ -1038,7 +1061,7 @@
         
         function cacheItemPositions() {
             const old = gridContainer.style.transform;
-            gridContainer.style.transform = `translate3d(${parallaxOffset.x + currentCanvasOffsetX}px, ${parallaxOffset.y}px, 0) scale(${currentCanvasScale})`;
+            gridContainer.style.transform = `translateX(${currentCanvasOffsetX}px) scale(${currentCanvasScale})`;
             items.forEach(item => {
                 const r = item.el.getBoundingClientRect();
                 item.center = { x: r.left + r.width/2, y: r.top + r.height/2 };
@@ -1071,7 +1094,8 @@
                 } else {
                     it.el.style.backgroundImage = 'none';
                     it.el.style.backgroundColor = data.bgColor;
-                    loadingManager.markItemLoaded();
+                    loadingManager.loadedItems++;
+                    loadingManager.updateProgress();
                 }
             });
             applyGridTransform();
@@ -1118,10 +1142,11 @@
                 if (data.img && data.img.trim()) {
                     lazyLoadObserver.observe(div);
                 } else {
-                    loadingManager.markItemLoaded();
+                    loadingManager.loadedItems++;
                 }
             }
             
+            loadingManager.updateProgress();
             applyGridTransform();
             cacheItemPositions();
         }
@@ -1173,49 +1198,6 @@
             if (!animationFrameId) animationFrameId = requestAnimationFrame(updateFisheyeEffect);
         }
         
-        // 自动保存函数
-        async function autoSaveSettings() {
-            if (!isAdminMode || !db) return;
-            try {
-                const newSettings = {
-                    webTitle: editWebTitleEl?.value?.trim() || DEFAULT_CONTENT.webTitle,
-                    title: editTitleEl?.value?.trim() || DEFAULT_CONTENT.title,
-                    subtitle: editSubtitleEl?.value?.trim() || DEFAULT_CONTENT.subtitle,
-                    titleStyle: {
-                        weight: editTitleWeightEl?.value || 'font-extrabold',
-                        spacing: editTitleSpacingEl?.value || 'tracking-normal',
-                        color: editTitleColorEl?.value || '#ffffff',
-                        size: editTitleSizeEl?.value + 'px' || '72px'
-                    },
-                    subtitleStyle: {
-                        weight: editSubtitleWeightEl?.value || 'font-normal',
-                        spacing: editSubtitleSpacingEl?.value || 'tracking-normal',
-                        color: editSubtitleColorEl?.value || '#9CA3AF',
-                        size: editSubtitleSizeEl?.value + 'px' || '24px'
-                    },
-                    loadingStyle: {
-                        color: editLoadingColorEl?.value || '#cccccc',
-                        weight: editLoadingWeightEl?.value || '400',
-                        spacing: editLoadingSpacingEl?.value || '10px'
-                    },
-                    fisheyeSettings: {
-                        radius: parseFloat(editFisheyeRadiusEl?.value) || 300,
-                        decayPower: parseFloat(editDecayPowerEl?.value) || 2.0,
-                        minScale: parseFloat(editMinScaleEl?.value) || 0.175,
-                        maxScale: parseFloat(editMaxScaleEl?.value) || 3.0,
-                        parallaxSmoothing: parseFloat(editParallaxSmoothingEl?.value) || 0.2,
-                        canvasScale: parseFloat(editCanvasScaleEl?.value) || 1.0,
-                        canvasOffsetX: parseInt(editCanvasOffsetXEl?.value) || 0,
-                        twinkleFrequency: parseFloat(editTwinkleFrequencyEl?.value) || 1.0,
-                        twinkleAmplitude: parseFloat(editTwinkleAmplitudeEl?.value) || 1.0
-                    }
-                };
-                await setDoc(doc(db, getSettingsDocPath()), newSettings, { merge: true });
-            } catch (error) {
-                console.error('自动保存失败:', error);
-            }
-        }
-        
         window.toggleEditMode = enable => {
             if (!isAdminMode) return;
             if (enable) {
@@ -1227,18 +1209,10 @@
                                          mainTitleEl.classList.contains('font-medium') ? 'font-medium' : 'font-normal';
                 editTitleSpacingEl.value = mainTitleEl.classList.toString().match(/tracking-\w+/)?.[0] || 'tracking-normal';
                 editTitleColorEl.value = mainTitleEl.style.color || '#ffffff';
-                editTitleSizeEl.value = parseInt(mainTitleEl.style.fontSize) || 72;
                 editSubtitleWeightEl.value = subTextEl.classList.contains('font-bold') ? 'font-bold' :
                                             subTextEl.classList.contains('font-medium') ? 'font-medium' : 'font-normal';
                 editSubtitleSpacingEl.value = subTextEl.classList.toString().match(/tracking-\w+/)?.[0] || 'tracking-normal';
                 editSubtitleColorEl.value = subTextEl.style.color || '#9CA3AF';
-                editSubtitleSizeEl.value = parseInt(subTextEl.style.fontSize) || 24;
-                
-                const loadingText = document.getElementById('loading-text');
-                editLoadingColorEl.value = loadingText?.style.color || '#cccccc';
-                editLoadingWeightEl.value = loadingText?.style.fontWeight || '400';
-                editLoadingSpacingEl.value = loadingText?.style.letterSpacing || '10px';
-                
                 editFisheyeRadiusEl.value = currentFisheyeRadius;
                 editDecayPowerEl.value = currentDecayPower;
                 editMinScaleEl.value = currentMinScale;
@@ -1258,7 +1232,33 @@
         
         window.saveContent = async () => {
             if (!isAdminMode || !db) return;
-            await autoSaveSettings();
+            const newSettings = {
+                webTitle: editWebTitleEl.value.trim() || DEFAULT_CONTENT.webTitle,
+                title: editTitleEl.value.trim() || DEFAULT_CONTENT.title,
+                subtitle: editSubtitleEl.value.trim() || DEFAULT_CONTENT.subtitle,
+                titleStyle: {
+                    weight: editTitleWeightEl.value,
+                    spacing: editTitleSpacingEl.value,
+                    color: editTitleColorEl.value
+                },
+                subtitleStyle: {
+                    weight: editSubtitleWeightEl.value,
+                    spacing: editSubtitleSpacingEl.value,
+                    color: editSubtitleColorEl.value
+                },
+                fisheyeSettings: {
+                    radius: parseFloat(editFisheyeRadiusEl.value) || 300,
+                    decayPower: parseFloat(editDecayPowerEl.value) || 2.0,
+                    minScale: parseFloat(editMinScaleEl.value) || 0.175,
+                    maxScale: parseFloat(editMaxScaleEl.value) || 3.0,
+                    parallaxSmoothing: parseFloat(editParallaxSmoothingEl.value) || 0.2,
+                    canvasScale: parseFloat(editCanvasScaleEl.value) || 1.0,
+                    canvasOffsetX: parseInt(editCanvasOffsetXEl.value) || 0,
+                    twinkleFrequency: parseFloat(editTwinkleFrequencyEl.value) || 1.0,
+                    twinkleAmplitude: parseFloat(editTwinkleAmplitudeEl.value) || 1.0
+                }
+            };
+            await setDoc(doc(db, getSettingsDocPath()), newSettings, { merge: true });
             window.toggleEditMode(false);
         };
         
@@ -1282,11 +1282,6 @@
             editSubtitleSpacingEl = document.getElementById('edit-subtitle-spacing');
             editTitleColorEl = document.getElementById('edit-title-color');
             editSubtitleColorEl = document.getElementById('edit-subtitle-color');
-            editTitleSizeEl = document.getElementById('edit-title-size');
-            editSubtitleSizeEl = document.getElementById('edit-subtitle-size');
-            editLoadingColorEl = document.getElementById('edit-loading-color');
-            editLoadingWeightEl = document.getElementById('edit-loading-weight');
-            editLoadingSpacingEl = document.getElementById('edit-loading-spacing');
             editFisheyeRadiusEl = document.getElementById('edit-fisheye-radius');
             editDecayPowerEl = document.getElementById('edit-decay-power');
             editMinScaleEl = document.getElementById('edit-min-scale');
@@ -1321,7 +1316,6 @@
                 updateVolumeIcon(0);
             }
             
-            // 鼠标事件监听 - 恢复到原来的gridContainer监听
             gridContainer.addEventListener('mouseenter', () => {
                 isMouseOverCanvas = true;
                 isMouseActive = true;
@@ -1333,42 +1327,6 @@
             window.addEventListener('mousemove', e => {
                 mousePos = {x: e.clientX, y: e.clientY};
             });
-            
-            // 添加自动保存事件监听
-            if (editTitleEl) {
-                editTitleEl.addEventListener('input', () => {
-                    mainTitleEl.textContent = editTitleEl.value;
-                    autoSaveSettings();
-                });
-            }
-            if (editSubtitleEl) {
-                editSubtitleEl.addEventListener('input', () => {
-                    subTextEl.textContent = editSubtitleEl.value;
-                    autoSaveSettings();
-                });
-            }
-            if (editTitleWeightEl) {
-                editTitleWeightEl.addEventListener('change', () => {
-                    applyTextStyles(mainTitleEl, {
-                        weight: editTitleWeightEl.value,
-                        spacing: editTitleSpacingEl.value,
-                        color: editTitleColorEl.value,
-                        size: editTitleSizeEl.value + 'px'
-                    });
-                    autoSaveSettings();
-                });
-            }
-            if (editSubtitleWeightEl) {
-                editSubtitleWeightEl.addEventListener('change', () => {
-                    applyTextStyles(subTextEl, {
-                        weight: editSubtitleWeightEl.value,
-                        spacing: editSubtitleSpacingEl.value,
-                        color: editSubtitleColorEl.value,
-                        size: editSubtitleSizeEl.value + 'px'
-                    });
-                    autoSaveSettings();
-                });
-            }
             
             // 修改点击事件：从打开视频模态框改为打开详情页面
             gridContainer.onclick = e => {
@@ -1387,6 +1345,9 @@
         }
         
         window.addEventListener('load', async () => {
+            // 初始化文字动画
+            initLoadingAnimation();
+            
             setupDOM();
             
             try {
@@ -1401,10 +1362,8 @@
                     subTextEl.textContent = d.subtitle || DEFAULT_CONTENT.subtitle;
                     const ts = d.titleStyle || DEFAULT_CONTENT.titleStyle;
                     const ss = d.subtitleStyle || DEFAULT_CONTENT.subtitleStyle;
-                    const ls = d.loadingStyle || DEFAULT_CONTENT.loadingStyle;
                     applyTextStyles(mainTitleEl, ts);
                     applyTextStyles(subTextEl, ss);
-                    applyLoadingStyles(ls);
                     const s = d.fisheyeSettings || DEFAULT_FISHEYE_SETTINGS;
                     currentFisheyeRadius = s.radius;
                     currentDecayPower = s.decayPower;
@@ -1485,35 +1444,15 @@
             <h1 id="main-title" class="text-white text-4xl font-extrabold cursor-text transition-all duration-500 hover:text-yellow-400 pointer-events-auto md:text-8xl tracking-normal" onclick="toggleEditMode(true)">3D&Motion Creative&Production</h1>
             <p id="sub-text" class="text-gray-400 text-base font-normal cursor-text transition-all duration-500 hover:text-gray-200 pointer-events-auto md:text-2xl tracking-normal" onclick="toggleEditMode(true)">Powerd by REDesign</p>
         </div>
-        <div id="edit-mode-container" class="hidden bg-gray-900/90 backdrop-blur-sm p-6 rounded-xl shadow-2xl pointer-events-auto max-w-5xl">
-            <h2 class="text-xl font-bold mb-4 text-red-400">顶部内容及视觉参数编辑 (Admin)</h2>
+        <div id="edit-mode-container" class="hidden bg-gray-900/90 backdrop-blur-sm p-6 rounded-xl shadow-2xl pointer-events-auto max-w-4xl">
+            <h2 class="text-xl Structural font-bold mb-4 text-red-400">顶部内容及视觉参数编辑 (Admin)</h2>
             <div class="space-y-4">
-                <div><label class="block text-sm font-medium text-gray-400">网站标题</label><input id="edit-web-title" type="text" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2" value="多媒体设计作品集"/></div>
-                
-                <!-- 加载页面样式设置 -->
-                <div class="p-4 bg-gray-800 rounded-lg">
-                    <label class="block text-lg font-medium text-white mb-2">加载页面样式</label>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">文字颜色</label>
-                            <input id="edit-loading-color" type="color" value="#cccccc" class="w-full h-10 rounded-md bg-gray-700 border-gray-600 cursor-pointer"/>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">字重</label>
-                            <input id="edit-loading-weight" type="range" min="100" max="900" step="100" value="400" class="w-full"/>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">字间距</label>
-                            <input id="edit-loading-spacing" type="text" value="10px" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2"/>
-                        </div>
-                    </div>
-                </div>
-                
+                <div><label class="block text-sm font-medium text-gray-400">网站标题</label><input id="edit-web-title" type="text" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2" value="灵感矩阵 | 设计作品集"/></div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="p-4 bg-gray-800 rounded-lg">
                         <label class="block text-lg font-medium text-white mb-2">主标题</label>
                         <input id="edit-title" type="text" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2" value="3D&Motion Creative&Production"/>
-                        <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div class="grid grid-cols-3 gap-3 mt-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">字重</label>
                                 <select id="edit-title-weight" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2">
@@ -1537,16 +1476,12 @@
                                 <label class="block text-sm font-medium text-gray-400 mb-1">颜色</label>
                                 <input id="edit-title-color" type="color" value="#ffffff" class="w-full h-10 rounded-md bg-gray-700 border-gray-600 cursor-pointer"/>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-1">字体大小 (px)</label>
-                                <input id="edit-title-size" type="number" min="12" max="120" value="72" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2"/>
-                            </div>
                         </div>
                     </div>
                     <div class="p-4 bg-gray-800 rounded-lg">
                         <label class="block text-lg font-medium text-white mb-2">副标题</label>
                         <input id="edit-subtitle" type="text" class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white p-2" value="Powerd by REDesign"/>
-                        <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div class="grid grid-cols-3 gap-3 mt-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">字重</label>
                                 <select id="edit-subtitle-weight" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2">
@@ -1569,10 +1504,6 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">颜色</label>
                                 <input id="edit-subtitle-color" type="color" value="#9CA3AF" class="w-full h-10 rounded-md bg-gray-700 border-gray-600 cursor-pointer"/>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-1">字体大小 (px)</label>
-                                <input id="edit-subtitle-size" type="number" min="12" max="60" value="24" class="w-full rounded-md bg-gray-700 border-gray-600 text-white p-2"/>
                             </div>
                         </div>
                     </div>
@@ -1617,7 +1548,7 @@
         2025 <span class="cursor-pointer hover:text-white transition-colors duration-200" onclick="handleAdminToggle()">©</span> All Rights Reserved by REDesign
     </div>
     
-    <div id="grid-container" class="absolute inset-0 m-auto grid pointer-events-auto" style="transform-origin:center center;transform:translate(0,0) scale(1);transform-style:preserve-3d;"></div>
+    <div id="grid-container" class="absolute inset-0 m-auto grid" style="transform-origin:center center;transform:translate(0,0) scale(1);transform-style:preserve-3d;"></div>
 
     <!-- 详情页面 -->
     <div id="detail-page" class="detail-page">
@@ -1728,32 +1659,7 @@
             </div>
         </div>
     </div>
-    
-    <script>
-        // 添加滑块值实时显示
-        document.addEventListener('DOMContentLoaded', () => {
-            const freqSlider = document.getElementById('edit-twinkle-frequency');
-            const ampSlider = document.getElementById('edit-twinkle-amplitude');
-            const offsetSlider = document.getElementById('edit-canvas-offset-x');
-            
-            if (freqSlider) {
-                freqSlider.addEventListener('input', (e) => {
-                    document.getElementById('freq-val').textContent = e.target.value;
-                });
-            }
-            
-            if (ampSlider) {
-                ampSlider.addEventListener('input', (e) => {
-                    document.getElementById('amp-val').textContent = e.target.value;
-                });
-            }
-            
-            if (offsetSlider) {
-                offsetSlider.addEventListener('input', (e) => {
-                    document.getElementById('offset-value').textContent = e.target.value;
-                });
-            }
-        });
-    </script>
 </body>
 </html>
+
+
