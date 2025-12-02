@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -28,11 +27,6 @@
             width: 140vw;
             height: 140vh;
             transform-origin: center center;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1;
         }
         .grid-item {
             transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
@@ -556,6 +550,11 @@
                 this.loadingQueue.push({ url, element, itemId });
                 this.processLoadingQueue();
             }
+            
+            markItemLoaded() {
+                this.loadedItems++;
+                this.updateProgress();
+            }
         }
         
         // 懒加载观察器
@@ -1072,8 +1071,7 @@
                 } else {
                     it.el.style.backgroundImage = 'none';
                     it.el.style.backgroundColor = data.bgColor;
-                    loadingManager.loadedItems++;
-                    loadingManager.updateProgress();
+                    loadingManager.markItemLoaded();
                 }
             });
             applyGridTransform();
@@ -1120,11 +1118,10 @@
                 if (data.img && data.img.trim()) {
                     lazyLoadObserver.observe(div);
                 } else {
-                    loadingManager.loadedItems++;
+                    loadingManager.markItemLoaded();
                 }
             }
             
-            loadingManager.updateProgress();
             applyGridTransform();
             cacheItemPositions();
         }
@@ -1324,13 +1321,13 @@
                 updateVolumeIcon(0);
             }
             
-            // 修改鼠标事件监听，确保全屏交互
-            document.body.addEventListener('mouseenter', () => {
+            // 鼠标事件监听 - 恢复到原来的gridContainer监听
+            gridContainer.addEventListener('mouseenter', () => {
                 isMouseOverCanvas = true;
                 isMouseActive = true;
                 startAnimationLoop();
             });
-            document.body.addEventListener('mouseleave', () => {
+            gridContainer.addEventListener('mouseleave', () => {
                 isMouseOverCanvas = false;
             });
             window.addEventListener('mousemove', e => {
@@ -1620,7 +1617,7 @@
         2025 <span class="cursor-pointer hover:text-white transition-colors duration-200" onclick="handleAdminToggle()">©</span> All Rights Reserved by REDesign
     </div>
     
-    <div id="grid-container" class="grid pointer-events-auto" style="grid-template-columns:repeat(10,1fr);transform-style:preserve-3d;"></div>
+    <div id="grid-container" class="absolute inset-0 m-auto grid pointer-events-auto" style="transform-origin:center center;transform:translate(0,0) scale(1);transform-style:preserve-3d;"></div>
 
     <!-- 详情页面 -->
     <div id="detail-page" class="detail-page">
