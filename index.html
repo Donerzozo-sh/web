@@ -910,10 +910,12 @@
                     scale = fisheye.minScale * 0.8;
                     opacity = 0.4;
                 } else if (!isMouseOverCanvas || dist >= radius) {
+                    // 修改这部分：只保留缩放闪烁，去掉透明度和明度闪烁
                     item.el.twinklePhase += 0.004 * item.el.twinkleSpeed * fisheye.twinkleFrequency;
                     const tw = (Math.sin(item.el.twinklePhase) + 1) / 2;
                     scale = fisheye.minScale * (0.7 + tw * 0.6 * fisheye.twinkleAmplitude);
-                    bright = 0.3 + tw * 1.1 * fisheye.twinkleAmplitude;
+                    // 移除明度闪烁，保持固定值
+                    bright = 1.0;
                 } else {
                     const p = 1 - dist / radius;
                     const e = 1 - Math.pow(1 - p, fisheye.decayPower);
