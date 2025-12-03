@@ -908,12 +908,11 @@
         scale = fisheye.minScale * 0.8;
         opacity = 0.4;
     } else if (!isMouseOverCanvas || dist >= radius) {
-        // 只保留大小缩放闪烁
+        // 闪烁效果
         item.el.twinklePhase += 0.004 * item.el.twinkleSpeed * fisheye.twinkleFrequency;
         const tw = (Math.sin(item.el.twinklePhase) + 1) / 2;
         scale = fisheye.minScale * (0.7 + tw * 0.6 * fisheye.twinkleAmplitude);
-        bright = 1.0;   // 固定亮度
-        opacity = 0.7;  // 固定透明度
+        bright = 0.3 + tw * 1.1 * fisheye.twinkleAmplitude;  // 亮度随闪烁变化
     } else {
         // 鱼眼效果
         const p = 1 - dist / radius;
@@ -927,9 +926,7 @@
     item.el.style.opacity = opacity;
     item.el.style.zIndex = z;
     item.el.style.filter = `brightness(${bright})`;
-});
-
-            
+});           
             if (state.isMouseActive) state.animationFrameId = requestAnimationFrame(updateFisheyeEffect);
         }
         
