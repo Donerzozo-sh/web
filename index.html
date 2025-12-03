@@ -877,60 +877,47 @@
         
         // ==================== 动画循环 ====================
         function updateFisheyeEffect() {
-            const { mousePos, parallaxOffset, fisheye, items, isFocusMode, selectedItemId, isMouseOverCanvas } = state;
-            const cx = innerWidth / 2, cy = innerHeight / 2;
-            
-            if (isMouseOverCanvas && !isFocusMode) {
-                const tx = (mousePos.x - cx) * CONFIG.PARALLAX_INTENSITY;
-                const ty = (mousePos.y - cy) * CONFIG.PARALLAX_INTENSITY;
-                parallaxOffset.x += (tx - parallaxOffset.x) * fisheye.parallaxSmoothing;
-                parallaxOffset.y += (ty - parallaxOffset.y) * fisheye.parallaxSmoothing;
-                applyGridTransform();
-            }
-            
-            if (state.currentView === 'table' || (state.isAdminMode && state.currentView === 'grid')) {
-                if (state.isMouseActive) state.animationFrameId = requestAnimationFrame(updateFisheyeEffect);
-                return;
-            }
-            
-            const radius = innerWidth <= 768 ? fisheye.radius * 0.6 : fisheye.radius;
-            
-            items.forEach(item => {
-                const ax = item.center.x + parallaxOffset.x;
-                const ay = item.center.y + parallaxOffset.y;
-                const dist = Math.hypot(mousePos.x - ax, mousePos.y - ay);
-                
-                let scale, opacity = 0.7, z = 1, bright = 1.0;
-                
-                if (isFocusMode && item.el.dataset.videoId === selectedItemId) {
-                    scale = fisheye.maxScale * 1.5;
-                    opacity = 1.0;
-                    z = 100;
-                } else if (isFocusMode) {
-                    scale = fisheye.minScale * 0.8;
-                    opacity = 0.4;
-                } else if (!isMouseOverCanvas || dist >= radius) {
-                    item.el.twinklePhase += 0.004 * item.el.twinkleSpeed * fisheye.twinkleFrequency;
-                    const tw = (Math.sin(item.el.twinklePhase) + 1) / 2;
-                    scale = fisheye.minScale * (0.7 + tw * 0.6 * fisheye.twinkleAmplitude);
-                    bright = 0.3 + tw * 1.1 * fisheye.twinkleAmplitude;
-                } else {
-                    const p = 1 - dist / radius;
-                    const e = 1 - Math.pow(1 - p, fisheye.decayPower);
-                    scale = fisheye.minScale + (fisheye.maxScale - fisheye.minScale) * e;
-                    opacity = 0.7 + 0.3 * e;
-                    z = 2 + Math.floor(e * 8);
-                }
-                
-                item.el.style.transform = `translateZ(0) scale(${scale})`;
-                item.el.style.opacity = opacity;
-                item.el.style.zIndex = z;
-                item.el.style.filter = `brightness(${bright})`;
-            });
-            
-            if (state.isMouseActive) state.animationFrameId = requestAnimationFrame(updateFisheyeEffect);
+    const cx = innerWidth/2, cy = innerHeight/2;
+    if (isMouseOverCanvas && !isFocusMode) {
+        const tx = (mousePos.x - cx) * PARALLAX_INTENSITY;
+        const ty = (mousePos.y - cy) * PARALLAX_INTENSITY;
+        parallaxOffset.x += (tx - parallaxOffset.x) * currentParallaxSmoothing;
+        parallaxOffset.y += (ty - parallaxOffset.y) * currentParallaxSmoothing;
+        applyGridTransform();
+    }
+    if (window.currentView==='table' || (isAdminMode && window.currentView==='grid')) {
+        if (isMouseActive) animationFrameId = requestAnimationFrame(updateFisheyeEffect);
+        return;
+    }
+    const radius = innerWidth <= 768 ? currentFisheyeRadius * 0.6 : currentFisheyeRadius;
+    items.forEach(it => {
+        const ax = it.center.x + parallaxOffset.x;
+        const ay = it.center.y + parallaxOffset.y;
+        const dist = Math.hypot(mousePos.x - ax, mousePos.y - ay);
+        let scale, z = 1;
+        if (isFocusMode && it.el.dataset.videoId === selectedItemId) {
+            scale = currentMaxScale * 1.5; z = 100;
+        } else if (isFocusMode) {
+            scale = currentMinScale * 0.8;
+        } else if (!isMouseOverCanvas || dist >= radius) {
+            // 只保留大小缩放闪烁
+            it.el.twinklePhase += 0.004 * it.el.twinkleSpeed * currentTwinkleFrequency;
+            const tw = (Math.sin(it.el.twinklePhase) + 1) / 2;
+            scale = currentMinScale * (0.7 + tw * 0.6 * currentTwinkleAmplitude);
+        } else {
+            const p = 1 - dist / radius;
+            const e = 1 - Math.pow(1 - p, currentDecayPower);
+            scale = currentMinScale + (currentMaxScale - currentMinScale) * e;
+            z = 2 + Math.floor(e * 8);
         }
-        
+        // 只应用缩放，透明度和亮度固定
+        it.el.style.transform = `translateZ(0) scale(${scale})`;
+        it.el.style.opacity = 1;
+        it.el.style.zIndex = z;
+    });
+    if (isMouseActive) animationFrameId = requestAnimationFrame(updateFisheyeEffect);
+}
+
         function startAnimationLoop() {
             if (!state.animationFrameId) {
                 state.animationFrameId = requestAnimationFrame(updateFisheyeEffect);
@@ -1493,4 +1480,5 @@
     </script>
 </body>
 </html>
+
 
