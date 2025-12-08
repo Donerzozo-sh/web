@@ -24,6 +24,7 @@
             background-color: #000000;
             min-height: 100vh;
             user-select: none;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         .text-10xl { font-size: 9rem; line-height: 1; }
@@ -47,6 +48,262 @@
             background-position: center;
             background-repeat: no-repeat;
             contain: layout style paint;
+        }
+        
+        /* 主题切换按钮样式 */
+        .theme-toggle-btn {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: rgba(75, 85, 99, 0.8);
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px;
+        }
+
+        .theme-toggle-btn:hover {
+            background: rgba(75, 85, 99, 1);
+        }
+
+        .theme-toggle-slider {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .theme-toggle-slider svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .theme-toggle-btn.light .theme-toggle-slider {
+            transform: translateX(22px);
+        }
+
+        /* 主题图标 */
+        .theme-icon {
+            width: 14px;
+            height: 14px;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            color: #ffffff;
+        }
+
+        .theme-toggle-btn.dark .moon-icon,
+        .theme-toggle-btn.light .sun-icon {
+            opacity: 1;
+        }
+
+        /* 白天模式样式 */
+        body.light-mode {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        .light-mode .loading-overlay {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+        }
+
+        .light-mode #loading-text {
+            color: #333333 !important;
+        }
+
+        .light-mode #loading-underscore {
+            color: #333333 !important;
+            animation: breathingLightDay 1s infinite ease-in-out !important;
+        }
+
+        .light-mode #main-title {
+            color: #000000 !important;
+        }
+
+        .light-mode #main-title:hover {
+            color: #f59e0b !important;
+        }
+
+        .light-mode #sub-text {
+            color: #6b7280 !important;
+        }
+
+        .light-mode #sub-text:hover {
+            color: #374151 !important;
+        }
+
+        .light-mode #admin-toggle-btn {
+            color: #6b7280 !important;
+        }
+
+        .light-mode #admin-toggle-btn span:hover {
+            color: #000000 !important;
+        }
+
+        .light-mode #admin-toggle-btn span.text-red-400 {
+            color: #ef4444 !important;
+        }
+
+        /* 管理员面板白天模式 */
+        .light-mode #edit-mode-container {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid #e5e7eb !important;
+            color: #000000 !important;
+        }
+
+        .light-mode #edit-mode-container h2 {
+            color: #ef4444 !important;
+        }
+
+        .light-mode #edit-mode-container label {
+            color: #374151 !important;
+        }
+
+        .light-mode #edit-mode-container .bg-gray-800 {
+            background: #f3f4f6 !important;
+            border: 1px solid #e5e7eb !important;
+        }
+
+        .light-mode #edit-mode-container .text-white {
+            color: #000000 !important;
+        }
+
+        .light-mode #edit-mode-container .text-gray-400 {
+            color: #6b7280 !important;
+        }
+
+        .light-mode #edit-mode-container input,
+        .light-mode #edit-mode-container select,
+        .light-mode #edit-mode-container textarea {
+            background: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            color: #000000 !important;
+        }
+
+        .light-mode #edit-mode-container input[type="range"] {
+            background: #e5e7eb !important;
+        }
+
+        .light-mode #edit-mode-container .bg-red-600 {
+            background: #ef4444 !important;
+        }
+
+        .light-mode #edit-mode-container .bg-gray-500 {
+            background: #6b7280 !important;
+        }
+
+        /* 表格视图白天模式 */
+        .light-mode #admin-table-view {
+            color: #000000 !important;
+        }
+
+        .light-mode .bg-gray-900\/95 {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid #e5e7eb !important;
+        }
+
+        .light-mode .text-red-400 {
+            color: #ef4444 !important;
+        }
+
+        .light-mode .bg-gray-700 {
+            background: #f3f4f6 !important;
+        }
+
+        .light-mode .admin-table-row {
+            background: rgba(248, 250, 252, 0.8) !important;
+            border: 1px solid #e5e7eb !important;
+        }
+
+        .light-mode .admin-table-row:hover {
+            background: rgba(243, 244, 246, 0.9) !important;
+            border-color: #d1d5db !important;
+        }
+
+        .light-mode .admin-table-row .text-gray-400 {
+            color: #6b7280 !important;
+        }
+
+        .light-mode .admin-table-row .text-white {
+            color: #000000 !important;
+        }
+
+        .light-mode .admin-table-row input,
+        .light-mode .admin-table-row textarea {
+            background: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            color: #000000 !important;
+        }
+
+        .light-mode .admin-table-row .bg-red-600 {
+            background: #ef4444 !important;
+        }
+
+        .light-mode .admin-table-row .bg-green-600 {
+            background: #10b981 !important;
+        }
+
+        .light-mode .admin-table-row .bg-gray-500 {
+            background: #6b7280 !important;
+        }
+
+        /* 认证模态框白天模式 */
+        .light-mode #auth-modal .bg-gray-800 {
+            background: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+        }
+
+        .light-mode #auth-modal .text-white {
+            color: #000000 !important;
+        }
+
+        .light-mode #auth-modal .text-gray-300 {
+            color: #6b7280 !important;
+        }
+
+        .light-mode #auth-modal .bg-gray-700 {
+            background: #f9fafb !important;
+            border: 1px solid #d1d5db !important;
+        }
+
+        .light-mode #auth-modal input {
+            color: #000000 !important;
+        }
+
+        /* 详情页面保持白色背景，只需要调整控制按钮 */
+        .light-mode .detail-back-btn {
+            color: #000000 !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            padding: 8px 16px !important;
+            border-radius: 8px !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .light-mode .detail-edit-btn {
+            background: #6366f1 !important;
+        }
+
+        /* 按钮样式调整 */
+        .light-mode .theme-toggle-btn {
+            background: rgba(209, 213, 219, 0.8) !important;
+        }
+
+        .light-mode .theme-toggle-btn:hover {
+            background: rgba(209, 213, 219, 1) !important;
+        }
+
+        .light-mode .theme-icon {
+            color: #374151 !important;
         }
         
         /* 加载界面 */
@@ -76,6 +333,18 @@
         @keyframes breathingLight {
             0%, 100% { opacity: 0.3; color: #666666; }
             50% { opacity: 1; color: #ffffff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.8); }
+        }
+
+        @keyframes breathingLightDay {
+            0%, 100% { 
+                opacity: 0.3; 
+                color: #999999; 
+            }
+            50% { 
+                opacity: 1; 
+                color: #333333; 
+                text-shadow: 0 0 8px rgba(0, 0, 0, 0.3); 
+            }
         }
         
         .loading-overlay.hidden {
@@ -313,6 +582,23 @@
             .volume-slider { width: 80px; }
             .video-sound-btn { width: 40px; height: 40px; }
             .video-sound-btn svg { width: 20px; height: 20px; }
+            
+            /* 响应式主题按钮 */
+            .theme-toggle-btn {
+                width: 45px;
+                height: 25px;
+            }
+            .theme-toggle-slider {
+                width: 18px;
+                height: 18px;
+            }
+            .theme-toggle-btn.light .theme-toggle-slider {
+                transform: translateX(20px);
+            }
+            .theme-icon {
+                width: 12px;
+                height: 12px;
+            }
         }
         
         /* 滚动条美化 */
@@ -340,6 +626,21 @@
     <!-- 顶部内容区域 -->
     <div id="top-content-area" class="fixed top-0 left-0 right-0 p-8 md:p-12 z-20 text-white pointer-events-none transition-all duration-300">
         <div id="admin-persistent-controls" class="absolute top-8 right-8 md:top-12 md:right-12 z-30 flex space-x-4 pointer-events-auto">
+            <!-- 主题切换按钮 -->
+            <button id="theme-toggle" class="theme-toggle-btn dark" onclick="toggleTheme()" title="切换主题">
+                <svg class="theme-icon sun-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                </svg>
+                <div class="theme-toggle-slider">
+                    <svg class="moon-icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                    </svg>
+                </div>
+                <svg class="theme-icon moon-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                </svg>
+            </button>
+            
             <button id="view-toggle-btn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-150 hidden"
                     onclick="switchView(window.currentView === 'grid' ? 'table' : 'grid')">
                 切换到列表编辑
@@ -660,6 +961,43 @@
         // ==================== 工具函数 ====================
         const getColumnIndex = (i) => i % CONFIG.NUM_COLS;
         const getColorForColumn = (col) => CONFIG.GRID_COLORS[col % CONFIG.GRID_COLORS.length];
+        
+        // ==================== 主题切换功能 ====================
+        window.toggleTheme = () => {
+            const body = document.body;
+            const themeBtn = document.getElementById('theme-toggle');
+            const currentTheme = body.classList.contains('light-mode') ? 'light' : 'dark';
+            
+            if (currentTheme === 'dark') {
+                // 切换到白天模式
+                body.classList.add('light-mode');
+                themeBtn.classList.remove('dark');
+                themeBtn.classList.add('light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                // 切换到暗黑模式
+                body.classList.remove('light-mode');
+                themeBtn.classList.remove('light');
+                themeBtn.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        };
+
+        // 页面加载时恢复主题设置
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const themeBtn = document.getElementById('theme-toggle');
+            
+            // 如果没有保存的主题，则使用系统偏好
+            const shouldUseDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+            
+            if (!shouldUseDark) {
+                document.body.classList.add('light-mode');
+                themeBtn.classList.remove('dark');
+                themeBtn.classList.add('light');
+            }
+        }
         
         // ==================== 加载管理器 ====================
         class LoadingManager {
@@ -1403,6 +1741,9 @@
         
         // ==================== 主初始化 ====================
         window.addEventListener('load', async () => {
+            // 初始化主题
+            setTimeout(initializeTheme, 100);
+            
             setupDOM();
             
             try {
@@ -1495,4 +1836,3 @@
     </script>
 </body>
 </html>
-
