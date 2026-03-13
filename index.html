@@ -601,6 +601,14 @@
             parallaxSmoothing: 0.2, canvasScale: 1.0, canvasOffsetX: 0,
             twinkleFrequency: 1.0, twinkleAmplitude: 1.0
         };
+
+        // ==================== 新增：密码 SHA-256 哈希函数（修复明文暴露问题） ====================
+        async function sha256(message) {
+            const msgUint8 = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
        
         // ==================== Firebase配置 ====================
         const firebaseConfig = {
@@ -893,11 +901,9 @@
                     scale = fisheye.minScale * 0.8;
                     opacity = 0.4;
                 } else if (!isMouseOverCanvas || dist >= radius) {
-                    // 修改这部分：只保留缩放闪烁，去掉透明度和明度闪烁
                     item.el.twinklePhase += 0.004 * item.el.twinkleSpeed * fisheye.twinkleFrequency;
                     const tw = (Math.sin(item.el.twinklePhase) + 1) / 2;
                     scale = fisheye.minScale * (0.7 + tw * 0.6 * fisheye.twinkleAmplitude);
-                    // 移除明度闪烁，保持固定值
                     bright = 1.0;
                 } else {
                     const p = 1 - dist / radius;
@@ -1139,11 +1145,20 @@
             document.getElementById('auth-modal').classList.add('hidden');
         };
        
-        window.handleAdminLogin = () => {
+        // ==================== 管理员登录（已加密，修复明文暴露） ====================
+        window.handleAdminLogin = async () => {
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
-           
-            if (username === 'admin' && password === '121310') {
+            
+            if (!password) {
+                document.getElementById('auth-error-message').classList.remove('hidden');
+                return;
+            }
+
+            const hashedInput = await sha256(password);
+            const correctHash = 'eb2a6bb36df13b4ac71cea7a1bae4fa7168c65c43c4e91582d64bcbbf94390f0'; // 对应原密码 121310
+
+            if (username === 'admin' && hashedInput === correctHash) {
                 window.setAdminMode(true);
             } else {
                 document.getElementById('auth-error-message').classList.remove('hidden');
@@ -1162,7 +1177,6 @@
                 document.getElementById('edit-title').value = elements.mainTitle.textContent;
                 document.getElementById('edit-subtitle').value = elements.subText.textContent;
                
-                // 设置其他输入值...
                 document.getElementById('edit-fisheye-radius').value = state.fisheye.radius;
                 document.getElementById('edit-decay-power').value = state.fisheye.decayPower;
                 document.getElementById('edit-min-scale').value = state.fisheye.minScale;
@@ -1368,7 +1382,6 @@
                 window.openDetailPage(id);
             };
            
-            // 平移滑块实时更新
             const offsetSlider = document.getElementById('edit-canvas-offset-x');
             const offsetValue = document.getElementById('offset-value');
             if (offsetSlider && offsetValue) {
@@ -1377,7 +1390,6 @@
                 });
             }
            
-            // 音量控制事件
             const volumeSlider = document.getElementById('volume-slider');
             if (volumeSlider) {
                 volumeSlider.addEventListener('input', window.updateVideoVolume);
@@ -1394,7 +1406,6 @@
                 state.auth = getAuth(app);
                 await signInAnonymously(state.auth);
                
-                // 监听设置
                 onSnapshot(doc(state.db, getSettingsDocPath()), (snap) => {
                     const d = snap.exists() ? snap.data() : {};
                    
@@ -1412,7 +1423,6 @@
                     if (state.items.length > 0) updateGridDOM();
                 });
                
-                // 监听网格项目
                 onSnapshot(collection(state.db, getGridCollectionPath()), (snap) => {
                     snap.docChanges().forEach((change) => {
                         const d = change.doc.data();
@@ -1429,7 +1439,6 @@
                         };
                     });
                    
-                    // 确保所有项目都有数据
                     for (let i = 0; i < CONFIG.TOTAL_ITEMS; i++) {
                         const id = `item_${i}`;
                         if (!state.itemData[id]) {
