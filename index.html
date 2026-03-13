@@ -341,9 +341,9 @@
     <div id="top-content-area" class="fixed top-0 left-0 right-0 p-8 md:p-12 z-20 text-white pointer-events-none transition-all duration-300">
         <div id="admin-persistent-controls" class="absolute top-8 right-8 md:top-12 md:right-12 z-30 flex space-x-4 pointer-events-auto">
             <button id="view-toggle-btn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-150 hidden"
-                    onclick="switchView(window.currentView === 'grid' ? 'table' : 'grid')">
-                切换到列表编辑
-            </button>
+        onclick="toggleAdminView()">
+    切换到列表编辑
+</button>
         </div>
         <div id="content-display" class="flex flex-col">
             <h1 id="main-title" class="text-white text-4xl font-extrabold cursor-text transition-all duration-500 hover:text-yellow-400 pointer-events-auto md:text-8xl tracking-normal" onclick="toggleEditMode(true)">3D&Motion Creative&Production</h1>
@@ -1495,5 +1495,6 @@
     </script>
 </body>
 </html>
+
 
 
