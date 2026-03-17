@@ -912,7 +912,10 @@
                     z = 2 + Math.floor(e * 8);
                 }
                
-                item.el.style.cssText = `transform:translateZ(0) scale(${scale});opacity:${opacity};z-index:${z};filter:brightness(${bright})`;
+                item.el.style.transform = `translateZ(0) scale(${scale})`;
+                item.el.style.opacity = opacity;
+                item.el.style.zIndex = z;
+                item.el.style.filter = `brightness(${bright})`;
             });
            
             if (state.isMouseActive) state.animationFrameId = requestAnimationFrame(updateFisheyeEffect);
