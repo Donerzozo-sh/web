@@ -29,14 +29,44 @@
         .text-10xl { font-size: 9rem; line-height: 1; }
         .text-12xl { font-size: 12rem; line-height: 1; }
        
-        #grid-container {
+        .grid-canvas {
             cursor: default;
             width: 140vw;
             height: 140vh;
             transform-origin: center center;
-            will-change: transform;
+            will-change: transform, opacity;
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            display: grid;
+            transition: opacity 0.4s ease;
         }
-       
+        .grid-canvas.grid-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #grid-tab-strip {
+            position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+            z-index: 30; display: flex; flex-direction: column; gap: 8px;
+        }
+        .grid-tab-btn {
+            width: 40px; height: 40px; background: none;
+            border: none; border-radius: 0;
+            color: rgba(255,255,255,0.4); font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: color 0.2s, font-size 0.2s; user-select: none;
+        }
+        .grid-tab-btn:hover { color: rgba(255,255,255,0.75); }
+        .grid-tab-btn.active { color: #fff; font-size: 30px; }
+
+        #admin-grid-tab-bar { position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; padding: 12px 0 16px; }
+        .admin-grid-tab { padding: 6px 20px; border-radius: 6px; font-size: 18px; font-weight: 600;
+            cursor: pointer; border: 1px solid #4B5563; color: #9CA3AF; background: #1F2937;
+            transition: all 0.15s ease; }
+        .admin-grid-tab.active { background: #DC2626; border-color: #DC2626; color: #fff; font-size: 27px; }
+
         .grid-item {
             transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
                         opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
@@ -485,8 +515,15 @@
         2025 <span class="cursor-pointer hover:text-white transition-colors duration-200" onclick="handleAdminToggle()">©</span> All Rights Reserved by REDesign
     </div>
    
-    <!-- 网格容器 -->
-    <div id="grid-container" class="absolute inset-0 m-auto grid"></div>
+    <!-- 网格切换标签条 -->
+    <div id="grid-tab-strip">
+        <button class="grid-tab-btn active" data-grid="5" onclick="switchGrid('5')">⑤</button>
+        <button class="grid-tab-btn"        data-grid="6" onclick="switchGrid('6')">⑥</button>
+    </div>
+    <!-- 网格容器 ⑤ -->
+    <div id="grid-container-5" class="grid-canvas"></div>
+    <!-- 网格容器 ⑥ -->
+    <div id="grid-container-6" class="grid-canvas grid-hidden"></div>
     <!-- 详情页面 -->
     <div id="detail-page" class="detail-page">
         <button class="detail-back-btn" onclick="closeDetailPage()">
@@ -580,7 +617,7 @@
         // ==================== 配置常量 ====================
         const CONFIG = {
             NUM_COLS: 10,
-            TOTAL_ITEMS: 60,
+            TOTAL_ITEMS: 50,
             PLACEHOLDER_VID: "https://www.w3schools.com/html/mov_bbb.mp4",
             PARALLAX_INTENSITY: 0.1,
             MIN_LOADING_TIME: 3000,
@@ -621,7 +658,10 @@
        
         const appId = 'design-c9479';
         const getSettingsDocPath = () => `/artifacts/${appId}/public/data/homepage_content/settings`;
-        const getGridCollectionPath = () => `/artifacts/${appId}/public/data/grid_items`;
+        const getGridCollectionPath = (gridId = '5') =>
+            gridId === '5'
+                ? `/artifacts/${appId}/public/data/grid_items`
+                : `/artifacts/${appId}/public/data/grid_items_6`;
        
         // ==================== 状态管理 ====================
         const state = {
@@ -639,11 +679,17 @@
             animationFrameId: null,
             mousePos: { x: 0, y: 0 },
             parallaxOffset: { x: 0, y: 0 },
-            items: [],
-            itemData: {},
+            activeGrid: '5',
+            adminTableGrid: '5',
+            isSwitchingGrid: false,
+            itemsPerGrid: { '5': [], '6': [] },
+            itemDataPerGrid: { '5': {}, '6': {} },
             fisheye: { ...DEFAULT_FISHEYE }
         };
        
+        const activeItems    = () => state.itemsPerGrid[state.activeGrid];
+        const activeItemData = () => state.itemDataPerGrid[state.activeGrid];
+
         // ==================== DOM元素引用 ====================
         let elements = {};
        
@@ -793,7 +839,7 @@
         function cacheItemPositions() {
             const old = elements.gridContainer.style.transform;
             elements.gridContainer.style.transform = `translateX(${state.fisheye.canvasOffsetX}px) scale(${state.fisheye.canvasScale})`;
-            state.items.forEach(item => {
+            activeItems().forEach(item => {
                 const r = item.el.getBoundingClientRect();
                 item.center = { x: r.left + r.width/2, y: r.top + r.height/2 };
             });
@@ -801,23 +847,23 @@
         }
        
         function resetGridScale() {
-            state.items.forEach(item => {
+            activeItems().forEach(item => {
                 item.el.style.transform = `scale(${state.fisheye.minScale})`;
                 item.el.style.opacity = '0.7';
                 item.el.style.filter = 'brightness(1.0)';
             });
         }
        
-        function createGrid() {
-            if (state.items.length) return;
-           
-            const container = elements.gridContainer;
+        function createGrid(gridId = '5') {
+            if (state.itemsPerGrid[gridId].length) return;
+
+            const container = elements.gridContainers[gridId];
             container.innerHTML = '';
             container.style.gridTemplateColumns = `repeat(${CONFIG.NUM_COLS}, 1fr)`;
-           
+
             for (let i = 0; i < CONFIG.TOTAL_ITEMS; i++) {
                 const id = `item_${i}`;
-                const data = state.itemData[id] || getDefaultItemData(i);
+                const data = state.itemDataPerGrid[gridId][id] || getDefaultItemData(i);
 
                 const div = document.createElement('div');
                 div.className = 'grid-item aspect-square bg-cover bg-center cursor-pointer';
@@ -829,27 +875,29 @@
                     div.dataset.imageUrl = data.img;
                     lazyLoader.observe(div);
                 } else {
-                    loadingManager.loadedItems++;
+                    if (gridId === '5') loadingManager.loadedItems++;
                 }
 
                 container.appendChild(div);
-                state.items.push({
+                state.itemsPerGrid[gridId].push({
                     el: div,
                     center: {x: 0, y: 0},
                     twinklePhase: Math.random() * Math.PI * 2,
                     twinkleSpeed: 0.5 + Math.random() * 0.5
                 });
             }
-           
-            loadingManager.updateProgress();
-            applyGridTransform();
-            cacheItemPositions();
+
+            if (gridId === '5') loadingManager.updateProgress();
+            if (gridId === state.activeGrid) {
+                applyGridTransform();
+                cacheItemPositions();
+            }
         }
        
-        function updateGridDOM() {
-            state.items.forEach((item, i) => {
-                const data = state.itemData[`item_${i}`] || getDefaultItemData(i);
-               
+        function updateGridDOM(gridId = '5') {
+            state.itemsPerGrid[gridId].forEach((item, i) => {
+                const data = state.itemDataPerGrid[gridId][`item_${i}`] || getDefaultItemData(i);
+
                 if (data.img?.trim()) {
                     item.el.dataset.imageUrl = data.img;
                     item.el.style.backgroundColor = data.bgColor || getColorForColumn(getColumnIndex(i));
@@ -857,17 +905,47 @@
                 } else {
                     item.el.style.backgroundImage = 'none';
                     item.el.style.backgroundColor = data.bgColor;
-                    loadingManager.loadedItems++;
-                    loadingManager.updateProgress();
+                    if (gridId === '5') {
+                        loadingManager.loadedItems++;
+                        loadingManager.updateProgress();
+                    }
                 }
             });
-            applyGridTransform();
-            cacheItemPositions();
+            if (gridId === state.activeGrid) {
+                applyGridTransform();
+                cacheItemPositions();
+            }
         }
        
+        // ==================== 网格切换 ====================
+        window.switchGrid = async (gridId) => {
+            if (gridId === state.activeGrid || state.isSwitchingGrid) return;
+            state.isSwitchingGrid = true;
+            if (state.animationFrameId) { cancelAnimationFrame(state.animationFrameId); state.animationFrameId = null; }
+            // Fade out current
+            elements.gridContainers[state.activeGrid].classList.add('grid-hidden');
+            await new Promise(r => setTimeout(r, 420));
+            // Switch
+            state.activeGrid = gridId;
+            if (!state.itemsPerGrid[gridId].length) createGrid(gridId);
+            // Fade in new
+            elements.gridContainers[gridId].classList.remove('grid-hidden');
+            applyGridTransform();
+            resetGridScale();
+            await new Promise(r => setTimeout(r, 30));
+            cacheItemPositions();
+            state.isMouseActive = true;
+            startAnimationLoop();
+            // Update tab UI
+            document.querySelectorAll('.grid-tab-btn').forEach(btn =>
+                btn.classList.toggle('active', btn.dataset.grid === gridId));
+            state.isSwitchingGrid = false;
+        };
+
         // ==================== 动画循环 ====================
         function updateFisheyeEffect() {
-            const { mousePos, parallaxOffset, fisheye, items, isFocusMode, selectedItemId, isMouseOverCanvas } = state;
+            const { mousePos, parallaxOffset, fisheye, isFocusMode, selectedItemId, isMouseOverCanvas } = state;
+            const items = activeItems();
             const cx = innerWidth / 2, cy = innerHeight / 2;
            
             if (isMouseOverCanvas && !isFocusMode) {
@@ -966,7 +1044,7 @@
        
         // ==================== 详情页面 ====================
         window.openDetailPage = (itemId) => {
-            const data = state.itemData[itemId] || getDefaultItemData(parseInt(itemId.split('_')[1]));
+            const data = activeItemData()[itemId] || getDefaultItemData(parseInt(itemId.split('_')[1]));
 
             state.currentDetailItem = itemId;
 
@@ -1018,7 +1096,7 @@
             state.isDetailEditMode = !state.isDetailEditMode;
            
             if (state.isDetailEditMode) {
-                const data = state.itemData[state.currentDetailItem] || {};
+                const data = activeItemData()[state.currentDetailItem] || {};
                 document.getElementById('edit-detail-title').value = data.title || '';
                 document.getElementById('edit-detail-text').value = data.content || '';
                 elements.detailDisplayContainer.style.display = 'none';
@@ -1041,11 +1119,11 @@
             }
            
             try {
-                const current = state.itemData[state.currentDetailItem] || {};
+                const current = activeItemData()[state.currentDetailItem] || {};
                 const updated = { ...current, title, content };
-               
-                await setDoc(doc(state.db, getGridCollectionPath(), state.currentDetailItem), updated, { merge: true });
-                state.itemData[state.currentDetailItem] = updated;
+
+                await setDoc(doc(state.db, getGridCollectionPath(state.activeGrid), state.currentDetailItem), updated, { merge: true });
+                state.itemDataPerGrid[state.activeGrid][state.currentDetailItem] = updated;
                
                 elements.detailTitle.textContent = title;
                 elements.detailText.textContent = content;
@@ -1091,16 +1169,18 @@
         window.switchView = (view) => {
             if (!state.isAdminMode) return;
             state.currentView = view;
-           
-            const gridEl = document.getElementById('grid-container');
+
             const tableEl = document.getElementById('admin-table-view');
             const editEl = document.getElementById('edit-mode-container');
             const displayEl = document.getElementById('content-display');
             const viewBtn = document.getElementById('view-toggle-btn');
-           
+            const tabStrip = document.getElementById('grid-tab-strip');
+
             if (view === 'table') {
                 state.isFocusMode = false;
-                gridEl.classList.add('hidden');
+                elements.gridContainers['5'].classList.add('hidden');
+                elements.gridContainers['6'].classList.add('hidden');
+                tabStrip.style.display = 'none';
                 tableEl.classList.remove('hidden');
                 renderAdminTable();
                 editEl.classList.add('hidden');
@@ -1110,7 +1190,13 @@
                 state.isFocusMode = false;
                 state.selectedItemId = null;
                 resetGridScale();
-                gridEl.classList.remove('hidden');
+                elements.gridContainers['5'].classList.remove('hidden');
+                elements.gridContainers['6'].classList.remove('hidden');
+                // Re-apply grid-hidden to inactive grid
+                const inactive = state.activeGrid === '5' ? '6' : '5';
+                elements.gridContainers[inactive].classList.add('grid-hidden');
+                elements.gridContainers[state.activeGrid].classList.remove('grid-hidden');
+                tabStrip.style.display = '';
                 tableEl.classList.add('hidden');
                 displayEl.classList.remove('hidden');
                 window.toggleEditMode(false);
@@ -1228,8 +1314,10 @@
             window.toggleEditMode(false);
         };
        
+        window.setAdminTableGrid = (gridId) => { state.adminTableGrid = gridId; renderAdminTable(); };
+
         function renderLocationThumbnail(index, color) {
-            let html = `<div class="w-[60px] h-[45px] grid gap-[1px] bg-gray-900 border border-gray-700 rounded-sm overflow-hidden" style="grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(6,1fr)">`;
+            let html = `<div class="w-[60px] h-[45px] grid gap-[1px] bg-gray-900 border border-gray-700 rounded-sm overflow-hidden" style="grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(5,1fr)">`;
             for (let i = 0; i < CONFIG.TOTAL_ITEMS; i++) {
                 html += `<div style="background:${i === index ? color : '#374151'}"></div>`;
             }
@@ -1240,21 +1328,26 @@
         function renderAdminTable() {
             const container = document.getElementById('admin-table-view');
             if (!container) return;
-           
+
+            const g = state.adminTableGrid;
             let html = `
                 <div class="bg-gray-900/95 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                    <div id="admin-grid-tab-bar">
+                        <button class="admin-grid-tab ${g==='5'?'active':''}" onclick="setAdminTableGrid('5')">⑤</button>
+                        <button class="admin-grid-tab ${g==='6'?'active':''}" onclick="setAdminTableGrid('6')">⑥</button>
+                    </div>
                     <h1 class="text-3xl font-bold mb-6 text-red-400 flex items-center justify-between">
-                        网格素材列表编辑 (共 ${CONFIG.TOTAL_ITEMS} 个项目)
+                        网格${g==='5'?'⑤':'⑥'}素材列表编辑 (共 ${CONFIG.TOTAL_ITEMS} 个项目)
                         <button onclick="switchView('grid')" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm">返回网格视图</button>
                     </h1>
-                    <div class="grid grid-cols-1 gap-4 max-w-6xl mx-auto">
+                    <div class="grid grid-cols-4 gap-4">
             `;
-           
+
             for (let i = 0; i < CONFIG.TOTAL_ITEMS; i++) {
                 const id = `item_${i}`;
-                const data = state.itemData[id] || getDefaultItemData(i);
+                const data = state.itemDataPerGrid[g][id] || getDefaultItemData(i);
+
                 const thumb = renderLocationThumbnail(i, data.bgColor || getColorForColumn(getColumnIndex(i)));
-               
                 html += `
                     <div id="row-${id}" class="admin-table-row bg-gray-800/70 rounded-lg p-4 flex flex-col gap-4 border border-gray-700 hover:border-gray-500 transition-all">
                         <div class="flex items-center gap-4">
@@ -1305,8 +1398,8 @@
             btn.classList.add('bg-gray-500');
            
             const idx = parseInt(itemId.split('_')[1]);
-            const bgColor = state.itemData[itemId]?.bgColor || getColorForColumn(getColumnIndex(idx));
-           
+            const bgColor = state.itemDataPerGrid[state.adminTableGrid][itemId]?.bgColor || getColorForColumn(getColumnIndex(idx));
+
             const data = {
                 img: newImg || null,
                 vid: newVid || CONFIG.PLACEHOLDER_VID,
@@ -1314,10 +1407,10 @@
                 title: newTitle || `项目 ${idx + 1}`,
                 content: newContent || ''
             };
-           
+
             try {
-                await setDoc(doc(state.db, getGridCollectionPath(), itemId), data, { merge: true });
-                state.itemData[itemId] = { ...state.itemData[itemId], ...data };
+                await setDoc(doc(state.db, getGridCollectionPath(state.adminTableGrid), itemId), data, { merge: true });
+                state.itemDataPerGrid[state.adminTableGrid][itemId] = { ...state.itemDataPerGrid[state.adminTableGrid][itemId], ...data };
                 btn.textContent = '已保存';
                 btn.classList.replace('bg-gray-500', 'bg-green-600');
                 renderAdminTable();
@@ -1336,10 +1429,25 @@
             }
         };
        
+        // ==================== 滚轮切换网格 ====================
+        let wheelDebounceTimer = null;
+        function wheelSwitchHandler(e) {
+            if (state.isSwitchingGrid || state.currentView !== 'grid') return;
+            clearTimeout(wheelDebounceTimer);
+            wheelDebounceTimer = setTimeout(() => {
+                if (e.deltaY > 0 && state.activeGrid === '5') window.switchGrid('6');
+                else if (e.deltaY < 0 && state.activeGrid === '6') window.switchGrid('5');
+            }, 80);
+        }
+
         // ==================== DOM初始化 ====================
         function setupDOM() {
             elements = {
-                gridContainer: document.getElementById('grid-container'),
+                gridContainers: {
+                    '5': document.getElementById('grid-container-5'),
+                    '6': document.getElementById('grid-container-6')
+                },
+                get gridContainer() { return this.gridContainers[state.activeGrid]; },
                 mainTitle: document.getElementById('main-title'),
                 subText: document.getElementById('sub-text'),
                 detailVideo: document.getElementById('detail-video'),
@@ -1352,34 +1460,23 @@
                 videoSoundToggle: document.getElementById('video-sound-toggle')
             };
            
-            elements.gridContainer.addEventListener('mouseenter', () => {
-                state.isMouseOverCanvas = true;
-                state.isMouseActive = true;
-                startAnimationLoop();
+            ['5', '6'].forEach(gridId => {
+                const container = elements.gridContainers[gridId];
+                container.addEventListener('mouseenter', () => { state.isMouseOverCanvas = true; state.isMouseActive = true; startAnimationLoop(); });
+                container.addEventListener('mouseleave', () => { state.isMouseOverCanvas = false; });
+                container.addEventListener('click', (e) => {
+                    const el = e.target.closest('.grid-item');
+                    if (!el) return;
+                    const id = el.dataset.videoId;
+                    if (state.isAdminMode) { window.switchView('table'); document.getElementById('row-' + id)?.scrollIntoView({ behavior: 'smooth' }); return; }
+                    window.openDetailPage(id);
+                });
+                container.addEventListener('wheel', wheelSwitchHandler, { passive: true });
             });
-           
-            elements.gridContainer.addEventListener('mouseleave', () => {
-                state.isMouseOverCanvas = false;
-            });
-           
+
             window.addEventListener('mousemove', (e) => {
                 state.mousePos = { x: e.clientX, y: e.clientY };
             });
-           
-            elements.gridContainer.onclick = (e) => {
-                const el = e.target.closest('.grid-item');
-                if (!el) return;
-               
-                const id = el.dataset.videoId;
-                if (state.isAdminMode) {
-                    window.switchView('table');
-                    const row = document.getElementById('row-' + id);
-                    if (row) row.scrollIntoView({ behavior: 'smooth' });
-                    return;
-                }
-               
-                window.openDetailPage(id);
-            };
            
             const offsetSlider = document.getElementById('edit-canvas-offset-x');
             const offsetValue = document.getElementById('offset-value');
@@ -1416,17 +1513,19 @@
                     Object.assign(state.fisheye, s);
                    
                     applyGridTransform();
-                    if (state.items.length > 0) updateGridDOM();
+                    if (state.itemsPerGrid['5'].length) updateGridDOM('5');
+                    if (state.itemsPerGrid['6'].length) updateGridDOM('6');
                 });
-               
-                onSnapshot(collection(state.db, getGridCollectionPath()), (snap) => {
+
+                // Grid ⑤ snapshot
+                onSnapshot(collection(state.db, getGridCollectionPath('5')), (snap) => {
                     snap.docChanges().forEach((change) => {
                         const d = change.doc.data();
                         const id = change.doc.id;
                         const i = parseInt(id.split('_')[1]);
                         if (i >= CONFIG.TOTAL_ITEMS) return;
-                       
-                        state.itemData[id] = {
+
+                        state.itemDataPerGrid['5'][id] = {
                             img: d.img || null,
                             vid: d.vid || CONFIG.PLACEHOLDER_VID,
                             bgColor: d.bgColor || getColorForColumn(getColumnIndex(i)),
@@ -1434,36 +1533,66 @@
                             content: d.content || `这是项目 ${i + 1} 的详细介绍内容...`
                         };
                     });
-                   
+
                     for (let i = 0; i < CONFIG.TOTAL_ITEMS; i++) {
                         const id = `item_${i}`;
-                        if (!state.itemData[id]) {
-                            state.itemData[id] = getDefaultItemData(i);
+                        if (!state.itemDataPerGrid['5'][id]) {
+                            state.itemDataPerGrid['5'][id] = getDefaultItemData(i);
                         }
                     }
-                   
-                    if (!state.items.length) {
-                        createGrid();
+
+                    if (!state.itemsPerGrid['5'].length) {
+                        createGrid('5');
                         state.isMouseActive = true;
                         startAnimationLoop();
                     } else {
-                        updateGridDOM();
+                        updateGridDOM('5');
                     }
                 });
-               
+
+                // Grid ⑥ snapshot
+                onSnapshot(collection(state.db, getGridCollectionPath('6')), (snap) => {
+                    snap.docChanges().forEach((change) => {
+                        const d = change.doc.data();
+                        const id = change.doc.id;
+                        const i = parseInt(id.split('_')[1]);
+                        if (i >= CONFIG.TOTAL_ITEMS) return;
+
+                        state.itemDataPerGrid['6'][id] = {
+                            img: d.img || null,
+                            vid: d.vid || CONFIG.PLACEHOLDER_VID,
+                            bgColor: d.bgColor || getColorForColumn(getColumnIndex(i)),
+                            title: d.title || `项目 ${i + 1}`,
+                            content: d.content || `这是项目 ${i + 1} 的详细介绍内容...`
+                        };
+                    });
+
+                    for (let i = 0; i < CONFIG.TOTAL_ITEMS; i++) {
+                        const id = `item_${i}`;
+                        if (!state.itemDataPerGrid['6'][id]) {
+                            state.itemDataPerGrid['6'][id] = getDefaultItemData(i);
+                        }
+                    }
+
+                    if (state.itemsPerGrid['6'].length) {
+                        updateGridDOM('6');
+                    }
+                });
+
             } catch (e) {
                 console.warn("Firebase初始化失败，进入本地模式", e);
                 state.isLocalMode = true;
-               
+
                 document.title = DEFAULT_CONTENT.webTitle;
                 elements.mainTitle.textContent = DEFAULT_CONTENT.title;
                 elements.subText.textContent = DEFAULT_CONTENT.subtitle;
-               
+
                 for (let i = 0; i < CONFIG.TOTAL_ITEMS; i++) {
-                    state.itemData[`item_${i}`] = getDefaultItemData(i);
+                    state.itemDataPerGrid['5'][`item_${i}`] = getDefaultItemData(i);
+                    state.itemDataPerGrid['6'][`item_${i}`] = getDefaultItemData(i);
                 }
-               
-                createGrid();
+
+                createGrid('5');
                 state.isMouseActive = true;
                 startAnimationLoop();
             }
